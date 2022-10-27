@@ -92,4 +92,4 @@ for bam in bamfiles:
                 mirnas.pop(x.name)
             elif failed.get(x.name) != None and mirnas.get(x.name) == None:
                 print("Found in failed, but not mirna")
-    reads.clear()
+        reads.clear()
