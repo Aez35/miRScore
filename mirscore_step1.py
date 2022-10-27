@@ -1,4 +1,4 @@
-# python3.6 mirscore_step1.py --fastqDir fastqs --mature pre2.fa --hairpin precursors.fa
+# python3.6 mirscore_step1.py --fastqDir fastqs --mature candidatemiRNAs.fa --hairpin precursors.fa
 
 from tkinter.messagebox import YES
 import pandas as pd
