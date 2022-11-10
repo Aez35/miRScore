@@ -11,7 +11,6 @@
 
 import RNA
 import pandas as pd
-import RNA
 import pysam
 from pysam import FastaFile
 import argparse
