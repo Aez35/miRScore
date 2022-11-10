@@ -5,7 +5,7 @@
 # It does by analyzing the sequences of the candidate miRNA and it's hairpin precursor.
 # Fastq files containing reads of the proposed miRNAs must be provided as evidence.
 # The first step is to quantify reads of each candidate miRNA and ensure it is present in at least 2 libraries.
-# Next, the structure of the candidate miRNA is scored accordingly to criteria in Axtell and Lively et al. 2018.
+# Next, the structure of the candidate miRNA is scored accordingly to criteria in Axtell and Meyers (2018).
 # The output file contains a list of successful candidates, their scores, and details about each successful candidate.
 # Additional outputs include the failed miRNAs and the step in which they failed.
 
@@ -143,6 +143,9 @@ subprocess.call(['bowtie-build', "precursors.fa", 'hairpin'])
 
 ##Create a list of all fastq files in provided directory.
 fastqs=glob.glob(args["fastqd"] + '/*.fastq')
+if len(fastqs)<2:
+    sys.exit("Error: miRScore requires at least two fastq files.")
+    
 ##Make output directory.
 subprocess.call(["mkdir","alignments"])
 
@@ -222,8 +225,8 @@ print(str(len(failed)) + " miRNAs failed to have reads in 2 or more libraries.")
 
 ################  Find miR* and score miRNA  ################
 
-header=["miRNA","miRScore","Precursor Length","mir sequence", "miRNA length","mir* sequence","miR* Length", "Reasons"]
-with open('mirscore_output.csv', mode='w', newline='') as csv_file:
+header=["miRNA","miRScore","Precursor Length","mir sequence", "miRNA length","mir* sequence","miR* Length", "Criteria failed"]
+with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
     csv_writer = csv.writer(csv_file)
 
     data=[]
@@ -263,8 +266,8 @@ with open('mirscore_output.csv', mode='w', newline='') as csv_file:
         csv_writer.writerow(row)
         
 faildata=[]
-failheader=["miRNA", "Reason for failing"]
-with open('failed_output.csv', mode='w', newline='') as csv_file:
+failheader=["miRNA", "Criteria failed"]
+with open('failed_miRNAs.csv', mode='w', newline='') as csv_file:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(failheader)
     for fail in failed:
