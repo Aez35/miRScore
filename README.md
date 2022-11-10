@@ -59,7 +59,7 @@ Create a directory containing fastq files and run miRSCore.
 mkdir fastqs
 fasterq-dump SRR3222445 -O fastqs/
 fasterq-dump SRR3269282 -O fastqs/
-python3.6 --mature candidatemiRNAs.fa --hairpin precursors.fa --fastqd fastqs/
+python --mature candidatemiRNAs.fa --hairpin precursors.fa --fastqd fastqs/
 ```
 
 # Output
