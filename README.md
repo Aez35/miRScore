@@ -1,14 +1,14 @@
-## miRScore
+# miRScore
 
-## Description
+# Description
 
 miRScore is a miRNA scoring tool developed to analyze novel miRNAs for submission to miRBase, a miRNA database. The criteria used to determine whether a novel miRNA is of high confidence is outlined in Axtell and Meyers (2018).
 
 miRScore requires two fasta files as input: one of novel miRNAs annotated prior to running miRScore and one of their hairpins. Please note that the identifier of each miRNA must match the identifier of the corresponding hairpin. In addition, this program requires multiple (two or more) fastq files containing evidence of these candidates to determine if a candidate miRNA meets the outlined criteria. Running miRScore outputs two csv files: one containing candidates miRNAs that met all criteria and relevant information for each loci (i.e. mature sequence, length of miRNA, etc). The other csv file contanins those that failed to meet all criteria and a short description of which criteria it failed on.
 
-## Installation
+# Installation
 
-# Dependencies
+## Dependencies
 
 There are several dependencies required to run miRScore.
 
@@ -32,9 +32,9 @@ There are several dependencies required to run miRScore.
 
 `bowtie`: https://bowtie-bio.sourceforge.net/index.shtml
     
-## Configuration
+# Configuration
 
-# Options
+## Options
 
 |Option     |Description                                               |
 |:---------:|:--------------------------------------------------------:|
@@ -42,7 +42,7 @@ There are several dependencies required to run miRScore.
 |hairpin    | Fasta file containing hairpin sequences of novel miRNAs  |
 |fastqdir   | Directory containing two or more fastq files             |
 
-# Bowtie
+## Bowtie
 
 Bowtie has been configured to run the following options.
 
@@ -52,7 +52,7 @@ Bowtie has been configured to run the following options.
 Rather than mapping to a genome, miRScore uses Bowtie to map each read to the miRNA precursors.
 
 
-## Example
+# Example
 
 Create a directory containing fastq files and run miRSCore.
 ```
@@ -62,7 +62,7 @@ fasterq-dump SRR3269282 -O fastqs/
 python3.6 --mature candidatemiRNAs.fa --hairpin precursors.fa --fastqdir fastqs/
 ```
 
-## Output
+# Output
 miRScore outputs two csv files that contain information about successful and fail candidates.
 
 **novel_miRNAS.csv** contains all miRNAs that had reads present in two or more libraries and who's miR/miR* duplex met requirements of being a miRNA.
