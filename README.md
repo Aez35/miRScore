@@ -42,7 +42,7 @@ There are several dependencies required to run miRScore.
 |:---------:|:--------------------------------------------------------:|
 |mature     | Fasta file containing mature sequences of novel miRNAs   |
 |hairpin    | Fasta file containing hairpin sequences of novel miRNAs  |
-|fastqdir   | Directory containing two or more fastq files             |
+|fastqd   | Directory containing two or more fastq files             |
 
 ## Bowtie
 
