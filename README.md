@@ -31,6 +31,8 @@ There are several dependencies required to run miRScore.
 `csv`: https://pypi.org/project/python-csv/
 
 `bowtie`: https://bowtie-bio.sourceforge.net/index.shtml
+
+`sys`: https://docs.python.org/3/library/sys.html
     
 # Configuration
 
@@ -47,7 +49,6 @@ There are several dependencies required to run miRScore.
 Bowtie has been configured to run the following options.
 
 - a, Report all valid alignments
-- v 0, Allow no mismatches
 
 Rather than mapping to a genome, miRScore uses Bowtie to map each read to the miRNA precursors.
 
