@@ -20,14 +20,16 @@ import os
 import glob
 from pathlib import Path
 import csv
-
+import regex
+import sys
 
 #Assign arguments for command line
 ap = argparse.ArgumentParser()
 
-ap.add_argument("-fd", "--fastqd", required = True, help="Directory containing fastq files")
-ap.add_argument("-mat", "--mature", required = True, help="fasta file of mature miRNA sequence")
-ap.add_argument("-hp", "--hairpin", required = True, help="fasta file of precursor sequence")
+ap.add_argument("--fastqd", required = True, help="Directory containing fastq files")
+ap.add_argument("--mature", required = True, help="fasta file of mature miRNA sequence")
+ap.add_argument("--hairpin", required = True, help="fasta file of precursor sequence")
+#ap.add_argument("-mm","--mismatch", help="Allow up to 1 mismatch in miRNA reads")
 
 args = vars(ap.parse_args())
 
@@ -73,14 +75,10 @@ def get_pairs(dotbracket):
             bp2 = i + 1
             pairs[bp1] = bp2
             pairs[bp2] = bp1
-    # testing
-    #print(dotbracket)
-    #print(pairs)
-    #sys.exit()
     return pairs
  
 
-def score(mir,seq,mirspos,mirpos,ss):
+def score(mir,seq,mirsspos,mirpos,ss):
 #Determine score of candidate miRNA based on criteria outlined in Axtell and Meyers et al 2018.
     reason=[]
     mscore = []
@@ -103,7 +101,7 @@ def score(mir,seq,mirspos,mirpos,ss):
 
     
     #Obtain dotbrackets of mir and mirstar
-    mirstar_db=ss[mirspos[0]:mirspos[1]]
+    mirstar_db=ss[mirsspos[0]:mirsspos[1]]
     mir_db = ss[mirpos[0]:mirpos[1]]
 
     #Test that mir/mir* duplex does not contain greater than 5 mismatches
@@ -132,19 +130,24 @@ def index_of(asym, in_list):
         return -1
 
 ### _______________________ Code begins __________________________ ###
+
+# Read in candidate miRNA hairpin and precursor
+mir_fa = FastaFile(args["mature"])
+hairpin_fa = FastaFile(args["hairpin"])
+
+
     
-################ Generate BAM Files  ################
+#***********  STEP 1: Generate BAM Files  *****************
 
 
 print("Building index...")
 ##Map fastq files to hairpin using bowtie2
-subprocess.call(['bowtie-build', "precursors.fa", 'hairpin'])
+subprocess.call(['bowtie-build', args["hairpin"], 'hairpin'])
 
 ##Create a list of all fastq files in provided directory.
 fastqs=glob.glob(args["fastqd"] + '/*.fastq')
 if len(fastqs)<2:
     sys.exit("Error: miRScore requires at least two fastq files.")
-    
 ##Make output directory.
 subprocess.call(["mkdir","alignments"])
 
@@ -156,50 +159,57 @@ for file in fastqs:
 
 
 
-################  Check for miRNA Reads  ################
+#***********  STEP 2: Check for miRNA Reads  *****************
 ##Initialize dictionary of failed miRNAs and successful candidate miRNAs.
 ## These dictionaries will be used to generate the final output of the program.
 failed = {}
 mirnas = {}
-mircounts = {}
 
 ##Fetch miRNA precursor sequence matching mature candidate miRNA sequence
-mir_fa = FastaFile(args["mature"])
-hairpin_fa = FastaFile(args["hairpin"])
 mir_dict =  SeqIO.index(args["mature"], "fasta")
 hp_dict = SeqIO.index(args["hairpin"], "fasta")
 
 
 #Check that each miRNA matches the precursor it shares a name with.
 rev_mir = {}
-for seq in mir_dict:
-    hp=hp_dict[seq].seq
-    mir=mir_dict[seq].seq
-    if index_of(mir, hp) == -1:
-        failed[seq] = "Hairpin not found" 
+for name in mir_dict:
+    hp=hp_dict[name].seq
+    mir=mir_dict[name].seq
+    m=regex.findall(str(mir) + '{s<=1}', str(hp)) # means allow up to 1 error
+    if len(m) < 1:
+        failed[name] = "Hairpin not found" 
     else:
-        rev_mir[seq]=mir_dict[seq].seq
+        rev_mir[name]=m[0]
 
 
 ##Create list of bam files from bowtie2 output.
 bamfiles=glob.glob('alignments/*.bam')
-#print(bamfiles)
 
+#Sort each bamfile and create a dictionary of read counts for each miRNA
+mircounts = {}
 for bam in bamfiles:
     print("Beginning next bam file...")
-
+    #Sort bam files
     pysam.sort("-o", "alignments/" + Path(bam).stem + "_sorted.bam", bam)
     pysam.index("alignments/" + Path(bam).stem + "_sorted.bam")
 
-    #Extract all sequence reads from bam file and create a list of all reads.
+    #Read in bamfile in pysam format
     bamfile = pysam.AlignmentFile("alignments/" + Path(bam).stem + "_sorted.bam", "rb")
-    reads=[]
-    for read in bamfile.fetch():
-        reads.append(read.seq)
 
+    #Count the number of reads each miRNA (x) appears in bamfile
     for x in rev_mir:
         reads=[]
-        for read in bamfile.fetch(x):
+        #Get loci of miRNA
+        mir=mir_dict[x].seq
+        hp=hp_dict[x].seq
+        #Index mir to hairpin while allowing 1 mismatch
+        m=regex.findall(str(mir) + '{s<=1}', str(hp)) # s<=1 allows 1 mismatch
+
+        # Allow 1-2 positional variance in miRNA reads
+        mstart=hp.index(m[0]) - 1
+        mstop=mstart+len(mir) + 1
+        #Count reads of miRNA in bamfile
+        for read in bamfile.fetch(x,mstart,mstop):
             reads.append(read.seq)
         if reads.count(rev_mir[x]) > 0:
             if mircounts.get(x)== None:
@@ -208,64 +218,109 @@ for bam in bamfiles:
                 mircounts[x]= 1
             else:
                 mircounts[x] = mircounts[x] + 1
+        else:
+            if mircounts.get(x) == None:
+                mircounts[x] = 0
 
-        #else:
-            #print("miRNA not found.")
         reads.clear()
 
+#If at least one read of the miRNA (x) is found, add it to {mirnas}. Otherwise add it to {failed}.
 for x in mircounts:
     if mircounts[x] > 1:
         mirnas[x] = mir_fa.fetch(x)
     else:
-        failed[x] = "present in >2 libraries" 
+        failed[x] = "present in <2 libraries" 
 
 print(str(len(mirnas)) + " potential miRNAs found.")
 print(str(len(failed)) + " miRNAs failed to have reads in 2 or more libraries.")
 
-################  Find miR* and score miRNA  ################
+#***********  STEP 3: Count miR*, score miR/miR*/hairpin, and write output file  *****************
 
-header=["miRNA","miRScore","Precursor Length","mir sequence", "miRNA length","mir* sequence","miR* Length", "Criteria failed"]
+header=["miRNA","miRScore","Precursor Length","mir sequence", "miRNA length","mir* sequence","miR* Length", "Reasons"]
 with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
     csv_writer = csv.writer(csv_file)
 
     data=[]
+    mirstar_counts={}
     for key in rev_mir:
-        #print(key)
+        #Hairpin sequence
         seq = hairpin_fa.fetch(key)
-        #print(seq)
+        #mature sequence
         mat = mir_fa.fetch(key)
-        #print(mat)
-        
+        #Vienna RNA Fold 
         (ss, mfe)=RNA.fold(seq)
-        #print(ss)
 
-        mstart = seq.index(mat)+1
-        mstop = seq.index(mat)+len(mat)+1
-        #print(mstart, mstop)
+        #Index mir while allowing 1 nt mismatch
+        m=regex.findall(str(mat) + '{s<=1}', str(seq)) # s<=1 allows 1 mismatch
 
+        #Find start and stop of miR
+        mstart=seq.index(m[0])
+        mstop=mstart+len(mat)
+
+        #Locate start and stop of miR/miR*
         mirpos=[mstart,mstop]
         mirspos=get_s_rels(mstart,mstop,ss)
-        #print(mirspos)
-        #print(seq[mstart:mstop])
-        #print(seq[mirspos[0]:mirspos[1]])
-        #print(mirspos)
-        mirstar=ss[mirspos[0]:mirspos[1]]
-        #print(mirstar)
-        print("Scoring miRNA "+ key)
-        result = score(mat,seq,mirspos,mirpos,ss)
-        print(result[1])
-        print(result[0])
-        if len(result[1])>0:
-            save=[key,result[0],len(seq),mat,len(mat),seq[mirspos[0]:mirspos[1]],len(mirstar), result[1]]
-        else:
-            save=[key,result[0],len(seq),mat,len(mat),seq[mirspos[0]:mirspos[1]],len(mirstar)]
-        data.append(save)
+        mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
+        
+        #Count if miR* reads are present in bamfiles.
+        reads=[]
+        #Get loci of miRNA
+        hp=hp_dict[key].seq
+        mirstar=hp[mirsspos[0]:mirsspos[1]]
+        
+        #Get start and stop of miR*
+        mirstart=mirsspos[0]
+        mirstop=mirsspos[1]
+
+        #Count miR* reads in bamfiles
+        bamfiles=glob.glob("alignments/*sorted.bam")
+        for bam in bamfiles:
+            bamfile = pysam.AlignmentFile(bam, "rb")
+            for read in bamfile.fetch(key,mirstart,mirstop):
+                reads.append(read.seq)
+            if reads.count(mirstar) > 0:
+                print("Reads")
+                #print(reads)
+                if mirstar_counts.get(key)== None:
+                #If not in {mircounts}, add it.
+                    print(key + " not yet in mircounts")
+                    mirstar_counts[key]= 1
+                else:
+                    mirstar_counts[key] = mirstar_counts[key] + 1
+            else:
+                if mirstar_counts.get(key)== None:
+                    mirstar_counts[key]= 0
+            reads.clear()
+
+        #If counts detected for miR*, score miRNA and save results.
+        if mirstar_counts[key]!= None:
+            if mirstar_counts[key] > 1:
+                    print("Scoring miRNA "+ key)
+                    result = score(mat,seq,mirsspos,mirpos,ss)
+                    print(result[1])
+                    print(result[0])
+                    if len(result[1])>0:
+                        save=[key,result[0],len(seq),mat,len(mat),seq[mirsspos[0]:mirsspos[1]],len(mirstar), result[1]]
+                    else:
+                        save=[key,result[0],len(seq),mat,len(mat),seq[mirsspos[0]:mirsspos[1]],len(mirstar)]
+                    data.append(save)
+            else:
+                failed[key]="miR* reads not present"
+                
+
     csv_writer.writerow(header)
     for row in data:
         csv_writer.writerow(row)
-        
+
+#Remove excess bam files and indexes.
+args = ('rm', '-rf', 'alignments/*sorted*')
+subprocess.call('%s %s %s' % args, shell=True)
+args = ('rm', '-rf', '*ebwt')
+subprocess.call('%s %s %s' % args, shell=True)
+
+#Write failed output file for any failed miRNAs.
 faildata=[]
-failheader=["miRNA", "Criteria failed"]
+failheader=["miRNA", "Reason for failing"]
 with open('failed_miRNAs.csv', mode='w', newline='') as csv_file:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(failheader)
