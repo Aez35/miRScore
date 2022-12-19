@@ -125,12 +125,14 @@ def score(mir,seq,mirsspos,mirpos,ss):
 
 
 def index_of(asym, in_list):
+#Index mir/mir* for asymestrical bulges
     try:
         return in_list.index(asym)
     except ValueError:
         return -1
 
 def is_fasta(filename):
+#Check if provided file is in fasta format
     with open(filename, "r") as handle:
         fasta = SeqIO.parse(handle, "fasta")
         return any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
@@ -146,6 +148,7 @@ def find_indices_of(char, in_string):
 
 ### _______________________ Code begins __________________________ ###
 
+#Check if provided hairpin and mature sequences are in fasta format
 if is_fasta(args["hairpin"]) == False:
     sys.exit("Error: Hairpin file must be in fasta format.")
 if is_fasta(args["mature"]) == False:
@@ -201,14 +204,17 @@ for x in mir_dict:
         fir_mir[x]=mir_dict[x].seq
 
 
-#Now add sequence with any mismatch to {rev_mir}
+#Check miRNA integrity and mismatches.
 for name in fir_mir:
+    #Check that miRNA name is found in the hairpin dictionary.
     if name in hp_dict:
         hp=hp_dict[name].seq
         mir=mir_dict[name].seq
+        #Check that miRNA does not multimap to hairpin
         if hp.count(mir)>1:
             failed[name] = "miRNA multimaps to hairpin" 
         else:
+            #Check for any mismatches in miRNA compared to hairpin.
             m=regex.findall(str(mir) + '{s<=1}', str(hp)) #allow up to 1 error
             if len(m) < 1:
                 failed[name] = "Hairpin does not match" 
