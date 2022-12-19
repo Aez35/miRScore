@@ -1,3 +1,4 @@
+
 #!/usr/local/bin/python3.6
 
 # miRScore is a miRNA scoring tool. 
@@ -129,7 +130,27 @@ def index_of(asym, in_list):
     except ValueError:
         return -1
 
+def is_fasta(filename):
+    with open(filename, "r") as handle:
+        fasta = SeqIO.parse(handle, "fasta")
+        return any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
+
+def find_indices_of(char, in_string):
+    index = -1
+    while True:
+        index = in_string.find(char, index + 1)
+        if index == -1:
+            break
+        yield index
+
+
 ### _______________________ Code begins __________________________ ###
+
+if is_fasta(args["hairpin"]) == False:
+    sys.exit("Error: Hairpin file must be in fasta format.")
+if is_fasta(args["mature"]) == False:
+    sys.exit("Error: Mature sequence must be in fasta format.")
+
 
 # Read in candidate miRNA hairpin and precursor
 mir_fa = FastaFile(args["mature"])
@@ -141,48 +162,63 @@ hairpin_fa = FastaFile(args["hairpin"])
 
 
 print("Building index...")
-##Map fastq files to hairpin using bowtie2
+#Map fastq files to hairpin using bowtie2
 subprocess.call(['bowtie-build', args["hairpin"], 'hairpin'])
 
 ##Create a list of all fastq files in provided directory.
 fastqs=glob.glob(args["fastqd"] + '/*.fastq')
 if len(fastqs)<2:
     sys.exit("Error: miRScore requires at least two fastq files.")
-##Make output directory.
+#Make output directory.
 subprocess.call(["mkdir","alignments"])
 
 print("Mapping each fastq...")
 for file in fastqs:
-##map each fastq file in directory to index.
+#Map each fastq file in directory to index.
     print("Mapping " + file + "...")
     subprocess.call(['bowtie', "-a", 'hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"])
 
 
-
 #***********  STEP 2: Check for miRNA Reads  *****************
-##Initialize dictionary of failed miRNAs and successful candidate miRNAs.
+#Initialize dictionary of failed miRNAs and successful candidate miRNAs.
 ## These dictionaries will be used to generate the final output of the program.
 failed = {}
 mirnas = {}
+rev_mir={}
+fir_mir={}
 
-##Fetch miRNA precursor sequence matching mature candidate miRNA sequence
+#Fetch miRNA precursor sequence matching mature candidate miRNA sequence
 mir_dict =  SeqIO.index(args["mature"], "fasta")
 hp_dict = SeqIO.index(args["hairpin"], "fasta")
 
-
-#Check that each miRNA matches the precursor it shares a name with.
-rev_mir = {}
-for name in mir_dict:
-    hp=hp_dict[name].seq
-    mir=mir_dict[name].seq
-    m=regex.findall(str(mir) + '{s<=1}', str(hp)) # means allow up to 1 error
-    if len(m) < 1:
-        failed[name] = "Hairpin not found" 
+#Check that each miRNA and hairpin contains only A, T, G, C. If not, add to failed or quit.
+for x in mir_dict:
+    characters = mir_dict[x].seq
+    result = all(char in characters for char in 'ATCG')
+    if result == False:
+        failed[x]="Sequence contained characters besides A, T, G, or C"
     else:
-        rev_mir[name]=m[0]
+        fir_mir[x]=mir_dict[x].seq
 
 
-##Create list of bam files from bowtie2 output.
+#Now add sequence with any mismatch to {rev_mir}
+for name in fir_mir:
+    if name in hp_dict:
+        hp=hp_dict[name].seq
+        mir=mir_dict[name].seq
+        if hp.count(mir)>1:
+            failed[name] = "miRNA multimaps to hairpin" 
+        else:
+            m=regex.findall(str(mir) + '{s<=1}', str(hp)) #allow up to 1 error
+            if len(m) < 1:
+                failed[name] = "Hairpin does not match" 
+            else:
+                rev_mir[name]=m[0]
+    else:
+        failed[name] = "Candidate miRNA does not have a hairpin of the same name" 
+
+
+#Create list of bam files from bowtie2 output.
 bamfiles=glob.glob('alignments/*.bam')
 
 #Sort each bamfile and create a dictionary of read counts for each miRNA
@@ -200,34 +236,36 @@ for bam in bamfiles:
     for x in rev_mir:
         reads=[]
         #Get loci of miRNA
-        mir=mir_dict[x].seq
+        mir=rev_mir[x]
         hp=hp_dict[x].seq
-        #Index mir to hairpin while allowing 1 mismatch
-        m=regex.findall(str(mir) + '{s<=1}', str(hp)) # s<=1 allows 1 mismatch
 
-        # Allow 1-2 positional variance in miRNA reads
-        mstart=hp.index(m[0]) - 1
-        mstop=mstart+len(mir) + 1
-        #Count reads of miRNA in bamfile
-        for read in bamfile.fetch(x,mstart,mstop):
-            reads.append(read.seq)
-        if reads.count(rev_mir[x]) > 0:
-            if mircounts.get(x)== None:
-                #If not in {mircounts}, add it.
-                #print(x + " not yet in mircounts")
-                mircounts[x]= 1
+        indices=[]
+        for i in find_indices_of(mir, hp):
+            indices.append(i)
+        if len(indices)==1:
+            # Allow 1-2 positional variance in miRNA reads
+            mstart=hp.index(mir) - 1
+            mstop=mstart+len(mir) + 1
+            #Count reads of miRNA in bamfile
+            for read in bamfile.fetch(x,mstart,mstop):
+                reads.append(read.seq)
+            if reads.count(mir) > 0:
+                if mircounts.get(x)== None:
+                    #If not in {mircounts}, add it.
+                    #print(x + " not yet in mircounts")
+                    mircounts[x]= 1
+                else:
+                    mircounts[x] = mircounts[x] + 1
             else:
-                mircounts[x] = mircounts[x] + 1
-        else:
-            if mircounts.get(x) == None:
-                mircounts[x] = 0
+                if mircounts.get(x) == None:
+                    mircounts[x] = 0
 
-        reads.clear()
+            reads.clear()
 
 #If at least one read of the miRNA (x) is found, add it to {mirnas}. Otherwise add it to {failed}.
 for x in mircounts:
     if mircounts[x] > 1:
-        mirnas[x] = mir_fa.fetch(x)
+        mirnas[x] = rev_mir[x]
     else:
         failed[x] = "present in <2 libraries" 
 
@@ -242,11 +280,11 @@ with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
 
     data=[]
     mirstar_counts={}
-    for key in rev_mir:
+    for key in mirnas:
         #Hairpin sequence
         seq = hairpin_fa.fetch(key)
         #mature sequence
-        mat = mir_fa.fetch(key)
+        mat = rev_mir[key]
         #Vienna RNA Fold 
         (ss, mfe)=RNA.fold(seq)
 
@@ -279,7 +317,6 @@ with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
             for read in bamfile.fetch(key,mirstart,mirstop):
                 reads.append(read.seq)
             if reads.count(mirstar) > 0:
-                print("Reads")
                 #print(reads)
                 if mirstar_counts.get(key)== None:
                 #If not in {mircounts}, add it.
@@ -329,3 +366,5 @@ with open('failed_miRNAs.csv', mode='w', newline='') as csv_file:
         faildata.append(failsave)
     for rows in faildata:
         csv_writer.writerow(rows)
+#Remove alignments directory.
+subprocess.call(["rm","-r","alignments"])
