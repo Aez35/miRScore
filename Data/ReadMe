@@ -6,7 +6,7 @@ Test1-NotFasta.txt
 Test command:
 python Final_miRScore.py --mature Test1-NotFasta.txt --hairpin precursors.fa --fastqd fastqs/
 
-#Test 2 - Characters besides A, T, G, or C.
+#Test 2 - Characters besides A, T, G, or C are present in the miRNA or hairpin.
 FIle:
 Test2-ATGC.fa
 Test command:
