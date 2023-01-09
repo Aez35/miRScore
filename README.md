@@ -14,7 +14,7 @@ Running miRScore outputs two csv files:
 
 ## Dependencies
 
-#Linux or Mac
+### Linux or Mac
 ```
 conda create --name miRScore ViennaRNA pysam argparse bowtie pandas biopython regex pathlib
 ```
