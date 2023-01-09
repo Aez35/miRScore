@@ -1,5 +1,5 @@
 
-#!/usr/local/bin/python3.6
+#!/usr/local/bin/
 
 # miRScore is a miRNA scoring tool. 
 # Its function is to determine if previously annotated miRNA candidates are of high confidence.
@@ -111,7 +111,7 @@ def score(mir,seq,mirsspos,mirpos,ss):
         reason.append("more than 5 mismatches")
     else:
         mscore.append(10)
-        
+    #Test that mir/miR* does not contain an asymmetric bulge greater than 3    
     if index_of("....", mirstar) == -1 and index_of("...", mir) != -1:
         mscore.append(5)
         reason.append("asymmetric bulge greater than 3")
@@ -125,14 +125,12 @@ def score(mir,seq,mirsspos,mirpos,ss):
 
 
 def index_of(asym, in_list):
-#Index mir/mir* for asymestrical bulges
     try:
         return in_list.index(asym)
     except ValueError:
         return -1
 
 def is_fasta(filename):
-#Check if provided file is in fasta format
     with open(filename, "r") as handle:
         fasta = SeqIO.parse(handle, "fasta")
         return any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
@@ -148,7 +146,6 @@ def find_indices_of(char, in_string):
 
 ### _______________________ Code begins __________________________ ###
 
-#Check if provided hairpin and mature sequences are in fasta format
 if is_fasta(args["hairpin"]) == False:
     sys.exit("Error: Hairpin file must be in fasta format.")
 if is_fasta(args["mature"]) == False:
@@ -165,7 +162,7 @@ hairpin_fa = FastaFile(args["hairpin"])
 
 
 print("Building index...")
-#Map fastq files to hairpin using bowtie2
+#Create index of hairpins using bowtie
 subprocess.call(['bowtie-build', args["hairpin"], 'hairpin'])
 
 ##Create a list of all fastq files in provided directory.
@@ -194,7 +191,7 @@ fir_mir={}
 mir_dict =  SeqIO.index(args["mature"], "fasta")
 hp_dict = SeqIO.index(args["hairpin"], "fasta")
 
-#Check that each miRNA and hairpin contains only A, T, G, C. If not, add to failed or quit.
+#Check that each miRNA contains only A, T, G, C. If not, add to failed or quit.
 for x in mir_dict:
     characters = mir_dict[x].seq
     result = all(char in characters for char in 'ATCG')
@@ -204,18 +201,16 @@ for x in mir_dict:
         fir_mir[x]=mir_dict[x].seq
 
 
-#Check miRNA integrity and mismatches.
+#Now add sequence with any mismatch to {rev_mir}
 for name in fir_mir:
-    #Check that miRNA name is found in the hairpin dictionary.
     if name in hp_dict:
         hp=hp_dict[name].seq
         mir=mir_dict[name].seq
-        #Check that miRNA does not multimap to hairpin
         if hp.count(mir)>1:
             failed[name] = "miRNA multimaps to hairpin" 
         else:
-            #Check for any mismatches in miRNA compared to hairpin.
             m=regex.findall(str(mir) + '{s<=1}', str(hp)) #allow up to 1 error
+            #m = regex.findall(r"(" + str(mir)+ "){s<=1}", str(hp))
             if len(m) < 1:
                 failed[name] = "Hairpin does not match" 
             else:
@@ -224,7 +219,7 @@ for name in fir_mir:
         failed[name] = "Candidate miRNA does not have a hairpin of the same name" 
 
 
-#Create list of bam files from bowtie2 output.
+#Create list of bam files from bowtie output.
 bamfiles=glob.glob('alignments/*.bam')
 
 #Sort each bamfile and create a dictionary of read counts for each miRNA
@@ -340,7 +335,7 @@ with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
             if mirstar_counts[key] > 1:
                     print("Scoring miRNA "+ key)
                     result = score(mat,seq,mirsspos,mirpos,ss)
-                    print(result[1])
+                    #print(result[1])
                     print(result[0])
                     if len(result[1])>0:
                         save=[key,result[0],len(seq),mat,len(mat),seq[mirsspos[0]:mirsspos[1]],len(mirstar), result[1]]
@@ -374,3 +369,5 @@ with open('failed_miRNAs.csv', mode='w', newline='') as csv_file:
         csv_writer.writerow(rows)
 #Remove alignments directory.
 subprocess.call(["rm","-r","alignments"])
+subprocess.call(["rm","*.ebwt"])
+
