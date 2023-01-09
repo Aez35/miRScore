@@ -14,29 +14,22 @@ Running miRScore outputs two csv files:
 
 ## Dependencies
 
+#Linux or Mac
+```
+conda create --name miRScore ViennaRNA pysam argparse bowtie pandas biopython regex
+```
+
 There are several dependencies required to run miRScore.
 
-`RNA`: https://pypi.org/project/ViennaRNA/
+`ViennaRNA`: https://pypi.org/project/ViennaRNA/
 
 `pysam`: https://pysam.readthedocs.io/en/latest/installation.html
 
 `argparse`: https://pypi.org/project/argparse/
 
-`subprocess`: https://pypi.org/project/subprocess.run/
-
-`pathlib`: https://pypi.org/project/pathlib2/
-
-`Bio`: https://biopython.org/wiki/Download
-
-`os`: https://pypi.org/project/os-sys/
-
-`glob`: https://pypi.org/project/glob2/
-
-`csv`: https://pypi.org/project/python-csv/
+`biopython`: https://biopython.org/wiki/Download
 
 `bowtie`: https://bowtie-bio.sourceforge.net/index.shtml
-
-`sys`: https://docs.python.org/3/library/sys.html
     
 # Configuration
 
@@ -46,7 +39,7 @@ There are several dependencies required to run miRScore.
 |:---------:|:--------------------------------------------------------:|
 |mature     | Fasta file containing mature sequences of novel miRNAs   |
 |hairpin    | Fasta file containing hairpin sequences of novel miRNAs  |
-|fastqd   | Directory containing two or more fastq files             |
+|fastqd     | Directory containing two or more fastq files             |
 
 ## Bowtie
 
