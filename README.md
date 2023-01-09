@@ -12,6 +12,10 @@ Running miRScore outputs two csv files:
 
 # Installation
 
+## miRScore install
+
+Currently, miRScore is run through the python script miRScore.py. To install miRScore, download the file miRScore.py from github page https://github.com/Aez35/miRScore/ and place in your working directory.
+
 ## Dependencies
 
 ### Linux or Mac
