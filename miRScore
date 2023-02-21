@@ -78,7 +78,6 @@ def get_pairs(dotbracket):
             pairs[bp1] = bp2
             pairs[bp2] = bp1
     return pairs
- 
 
 def score(mir,seq,mirsspos,mirpos,ss):
 #Determine score of candidate miRNA based on criteria outlined in Axtell and Meyers et al 2018.
