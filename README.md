@@ -12,36 +12,32 @@ Running miRScore outputs two csv files:
 
 # Installation
 
-## miRScore installation
-
-miRScore is run through the python script miRScore.py. To install miRScore, download the file miRScore.py from github page https://github.com/Aez35/miRScore/.
-
-Place the miRScore script in your conda environment. To locate this loaction, use the command conda info --envs.
-
 ## Dependencies
+All dependencies can be install through `conda`. To install and set up `conda`, follow the instructions at https://bioconda.github.io
 
 ### Linux or Mac
 ```
 conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib
 ```
 
-There are several dependencies required to run miRScore.
 
-`ViennaRNA`: https://pypi.org/project/ViennaRNA/
+## miRScore installation
 
-`pysam`: https://pysam.readthedocs.io/en/latest/installation.html
+miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore.
 
-`argparse`: https://pypi.org/project/argparse/
+Place the `miRScore` script in your conda environment. To locate this loaction, use the command `conda info --envs`.
 
-`biopython`: https://biopython.org/wiki/Download
-
-`bowtie`: https://bowtie-bio.sourceforge.net/index.shtml
+For example:
+```
+chmod +x miRScore
+mv miRScore /opt/anaconda3/envs/miRScore
+```
     
 # Configuration
 
 ##Usage
 ```
-miRScore [-h] [--fastq fastqDirectory] [--bam bamfileDirectory] --mature MIRNAFILE --hairpin HAIRPINFILE [-mm]
+miRScore [-h] ([--fastq fastqDirectory]|[--bam bamfileDirectory]) --mature MIRNAFILE --hairpin HAIRPINFILE [-mm]
 ```
 
 ## Options
