@@ -12,15 +12,17 @@ Running miRScore outputs two csv files:
 
 # Installation
 
-## miRScore install
+## miRScore installation
 
-Currently, miRScore is run through the python script miRScore.py. To install miRScore, download the file miRScore.py from github page https://github.com/Aez35/miRScore/ and place in your working directory.
+miRScore is run through the python script miRScore.py. To install miRScore, download the file miRScore.py from github page https://github.com/Aez35/miRScore/.
+
+Place the miRScore script in your conda environment. To locate this loaction, use the command conda info --envs.
 
 ## Dependencies
 
 ### Linux or Mac
 ```
-conda create --name miRScore ViennaRNA pysam argparse bowtie pandas biopython regex pathlib
+conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib
 ```
 
 There are several dependencies required to run miRScore.
@@ -37,13 +39,20 @@ There are several dependencies required to run miRScore.
     
 # Configuration
 
+##Usage
+```
+miRScore [-h] [--fastq fastqDirectory] [--bam bamfileDirectory] --mature MIRNAFILE --hairpin HAIRPINFILE [-mm]
+```
+
 ## Options
 
 |Option     |Description                                               |
 |:---------:|:--------------------------------------------------------:|
 |mature     | Fasta file containing mature sequences of novel miRNAs   |
 |hairpin    | Fasta file containing hairpin sequences of novel miRNAs  |
-|fastqd     | Directory containing two or more fastq files             |
+|fastq      | Directory containing two or more fastq files             |
+|bam        | Directory containing two or more bam files               |
+|mm         | Allow up to 1 mismatch in miRNA reads.                   |
 
 ## Bowtie
 
@@ -61,7 +70,7 @@ Create a directory containing fastq files and run miRSCore.
 mkdir fastqs
 fasterq-dump SRR3222445 -O fastqs/
 fasterq-dump SRR3269282 -O fastqs/
-python miRScore.py --mature candidatemiRNAs.fa --hairpin precursors.fa --fastqd fastqs/
+python3.6 miRScore.py --mature candidatemiRNAs.fa --hairpin precursors.fa --fastqd fastqs/
 ```
 
 # Output
