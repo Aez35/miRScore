@@ -12,7 +12,7 @@ There are three data sets provided for testing miRScore.
 
 ## Instructions
 
-To test these datasets miRScore, install as directed in the README file in the main repository. 
+To test these datasets miRScore, install miRScore as directed in the README file in the main repository. 
 Download the dataset from the TestData folder that you would like to test miRScore with and place these files in your working directory.
 
 Create a directory called "Fastqs/":
