@@ -22,7 +22,7 @@ All dependencies can be install through `conda`. To install and set up `conda`, 
 ### Conda installation on Mac/Linux environment
 
 ```
-conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sratoolkit
+conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sra-tools
 ```
 
 
