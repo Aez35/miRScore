@@ -418,7 +418,7 @@ for x in mirna_counts:
     else:
         print("Adding reads to dictionary...")
         precision=(100*((sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
-        if precision < 0.745:
+        if precision < 75:
             mirna_dict[x][10]="Fail"
             mirna_dict[x][11]="Precision less than 75%"
             add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
