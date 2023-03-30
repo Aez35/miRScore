@@ -14,6 +14,7 @@ import pandas as pd
 import pysam
 from pysam import FastaFile
 import argparse
+import shutil
 import subprocess
 from subprocess import Popen, PIPE, STDOUT
 from Bio import SeqIO
@@ -25,6 +26,17 @@ import regex
 import sys
 import time
 startTime = time.time()
+
+req_packs=["bowtie","samtools","RNAfold"]
+
+for pack in req_packs:
+        path = shutil.which(pack)
+        if path is not None:
+            print('Requires package {0} : {1}'.format(pack,path))
+        else:
+            msg = 'Requires package {0} : Not found!'.format(pack)
+            sys.exit(msg)
+
 
 
 #Assign arguments for command line
@@ -208,6 +220,19 @@ def add_values_in_dict(dict, key, list_of_values):
     return dict
 ### _______________________ Code begins __________________________ ###
 
+path="alignments"
+isExist = os.path.exists(path)
+if isExist==True:
+    subprocess.call(["rm","-rf","alignments/"])
+    print("Removed previous alignments folder.")
+
+path="RNAplots"
+isExist = os.path.exists(path)
+if isExist==True:
+    subprocess.call(["rm","-rf","RNAplots/"])
+    print("Removed previous RNAplots folder.")
+
+
 
 # Read in candidate miRNA hairpin and precursor
 mir_fa = FastaFile(args.mirnas)
@@ -275,10 +300,10 @@ for x in mir_one:
             if len(result[1]) == 0:
                 flag = "NA"
             else:
-                flag=str(result[1][0])
+                flag=str(result[1])
             
             if sum(result[0]) < 80:
-                flag=str(result[1][0])
+                flag=str(result[1])
                 add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,result[2][2],result[2][3]])
             else:
                 add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",flag,result[2][2],result[2][3]])
@@ -322,7 +347,7 @@ elif args.bamfile is not None:
     for file in bams2convert:
         cmd = "samtools bam2fq " + file + ' >' + args.bamfile + Path(file).stem + ".fastq"
         run(cmd)
-    fastqs=glob.glob(args.bamfile + '/*.fastq')
+    fastqs=glob.glob(args.bamfile + '*.fastq')
     subprocess.call(["mkdir","alignments"])
     align_fastqs(args,fastqs)
 
@@ -339,6 +364,10 @@ mirna_counts={}
 loci_counts={}
 #Read counting
 bamfiles=glob.glob('alignments/*sorted.bam')
+if len(bamfiles)==0:
+    msg = 'Requires two or more successful alignments'
+    sys.exit(msg)
+    
 print("Beginning mirna counts...")
 for bam in bamfiles:
     print("Checking " + bam + "...")
@@ -445,14 +474,14 @@ for mirfail in failed:
         mirstar=hp[mirsspos[0]:mirsspos[1]]
         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
 
-for x in mirna_counts:
+for x in mirna_dict:
             seq = str(mirna_dict[x][8])
             #mature sequence
             mat = str(mirna_dict[x][0])
             mir=str(mirna_dict[x][4])
-            mstart=int(mirna_dict[x][2])+1
+            mstart=int(mirna_dict[x][2]+1)
             mstop=int(mirna_dict[x][3])
-            mirstart=int(mirna_dict[x][6])+1
+            mirstart=int(mirna_dict[x][6]+1)
             mirstop=int(mirna_dict[x][7])
             #Create ps file from RNAplot
             os.chdir('RNAplots')
