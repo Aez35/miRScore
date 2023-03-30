@@ -70,14 +70,10 @@ Rather than mapping to a genome, miRScore uses Bowtie to map each read to the mi
 
 # Example
 
-For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs downloaded from miRBase. Before you begin, download the `mature.fa` and `hairpin.fa` files from [miRBase](https://www.mirbase.org/ftp.shtml).
+For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs downloaded from miRBase. Before you begin, download the two test data FASTA files provided in [TestData](https://github.com/Aez35/miRScore/tree/main/TestData) folder: `ath_miRBase_miRNAs.fa` and `ath_miRBase_precursors.fa`. Place these in your working directory.
 
-1. Extract the *Arabidopsis thaliana* entries using the following commands:
-```
-grep -A 1 '>ath' mature.fa | grep -v '\-\-' | sed 's/ .*//g'|tr '[:lower:]' '[:upper:]'| sed 's/..P//g' > ath_miRNAs.fa
-grep -A 1 '>ath' hairpin.fa | grep -v '\-\-' | sed 's/ .*//g'| tr '[:lower:]' '[:upper:]' > ath_precursors2.fa
-```
-2. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
+
+1. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
 
 ```
 mkdir fastqs
@@ -85,14 +81,20 @@ cd fastqs
 fasterq-dump SRR3222443 SRR3222444
 cd ..
 ```
-3. Run miRScore
+2. Run miRScore
 ```
-python3.6 miRScore.py --mirnas ath_miRNAs.fa --precursors ath_precursors.fa --fastqd fastqs/
+python3.6 miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precursors.fa --fastq fastqs/
 ```
 
 # Output
-miRScore outputs a csv file containing the results for all proposed miRNAs , `miRScore_Results.csv`.
+miRScore will have two outputs:
 
+* `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs
+* `RNAplots`: A folder containing .ps files for each miRNA precursor foldback structure, including miR(green)/miR*(red) annotation.
+
+### miRScore_Results.csv
+
+This file contains the results for all candidate miRNAs submitted to miRScore.
 
 * `Name` - miRNA name provided by user.  
 * `mSeq` - miRNA sequence.  
@@ -114,3 +116,8 @@ miRScore outputs a csv file containing the results for all proposed miRNAs , `mi
 * `precision` - Measure of read precision at miRNA loci. Found by totaling the number of reads for miR and miRStar, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
 
 
+### RNAplots
+
+Directory containing .ps files of miRNA precursor foldback structure. This structure is predicted using Vienna RNAfold. For more information on RNA predicted structures, please visit [ViennaRNA page](https://www.tbi.univie.ac.at/RNA/index.html).
+
+Each file contains the hairpin sequence for a miRNA, as well as annotation for the miRNA and predicted miRNA* sequences. The miRNA is outlined in green, while the miRNA* is outlined in red.
