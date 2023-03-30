@@ -70,15 +70,16 @@ Rather than mapping to a genome, miRScore uses Bowtie to map each read to the mi
 
 # Example
 
-For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs downloaded from miRBase. Before you begin, download the two test data FASTA files provided in [TestData](https://github.com/Aez35/miRScore/tree/main/TestData) folder: `ath_miRBase_miRNAs.fa` and `ath_miRBase_precursors.fa`. Place these in your working directory.
+For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs downloaded from miRBase and small RNA-sequencing data downloaded from [PlantSmallRNAgenes](https://plantsmallrnagenes.science.psu.edu/genomes.php?id=50). Before you begin, download the two test data FASTA files provided in [TestData](https://github.com/Aez35/miRScore/tree/main/TestData) folder: `ath_miRBase_miRNAs.fa` and `ath_miRBase_precursors.fa`. Place these in your working directory.
 
 
-1. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
+1. Create a directory for small RNA-seq libraries and retrieve bam files.
 
 ```
-mkdir fastqs
-cd fastqs
-fasterq-dump SRR3222443 SRR3222444
+mkdir bamfiles
+cd bamfiles
+wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR5295846_trimmedSingle.bam
+wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR5151110_trimmedSingle.bam
 cd ..
 ```
 2. Run miRScore
