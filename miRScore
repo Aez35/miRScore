@@ -264,7 +264,7 @@ for x in mir_one:
         mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
         if mirsspos[0] > mirsspos[1]:
             flag="mirStar not indexable"
-            add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",int(0),flag,"NA","NA","NA","NA","NA","NA"])
+            add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,"NA","NA","NA","NA","NA","NA"])
         else:
             mirstar=hp[mirsspos[0]:mirsspos[1]]
 
@@ -279,9 +279,9 @@ for x in mir_one:
             
             if sum(result[0]) < 80:
                 flag=str(result[1][0])
-                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sum(result[0]),flag,result[2][2],result[2][3]])
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,result[2][2],result[2][3]])
             else:
-                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",sum(result[0]),flag,result[2][2],result[2][3]])
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",flag,result[2][2],result[2][3]])
 
     else:
         failed[x]="miRNA not found in hairpin"
@@ -343,7 +343,7 @@ print("Beginning mirna counts...")
 for bam in bamfiles:
     print("Checking " + bam + "...")
     for x in mirna_dict:
-        if mirna_dict[x][12]!="mirStar not indexable":
+        if mirna_dict[x][11]!="mirStar not indexable":
             if mirna_dict[x][2] !=0 and mirna_dict[x][6]!=0:
                 mstart_indx=mirna_dict[x][2]-1
                 mstop_indx=mirna_dict[x][3]+1
@@ -407,7 +407,7 @@ for x in mirna_counts:
 
     if mirstarCount < 2 or mircount <2:
         mirna_dict[x][10]="Fail"
-        mirna_dict[x][12]="Not present in 2 or more libraries"        
+        mirna_dict[x][11]="Not present in 2 or more libraries"        
         print(str(x) + " failed for not being present in two or more libraries.")
         if sum(loci_counts[x]) != 0:
             precision="{:.2f}".format((100*(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
@@ -420,7 +420,7 @@ for x in mirna_counts:
         precision=(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])
         if precision < 0.745:
             mirna_dict[x][10]="Fail"
-            mirna_dict[x][12]="Precision less than 75%"
+            mirna_dict[x][11]="Precision less than 75%"
             add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
 
         else:
@@ -443,7 +443,7 @@ for mirfail in failed:
         #Python indexing of mir position
         mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
         mirstar=hp[mirsspos[0]:mirsspos[1]]
-        add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",int(0),str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
+        add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
 
 for x in mirna_counts:
             seq = str(mirna_dict[x][8])
@@ -464,7 +464,7 @@ for x in mirna_counts:
             os.chdir('..')
 
 from csv import writer
-header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "score","flags","mismatches","bulges",'mReads','msReads',"totReads","precision"]
+header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","precision"]
 with open("miRScore_results.csv", mode="w", newline='') as csv_out:
     csv_writer = writer(csv_out)
     csv_writer.writerow(header)
