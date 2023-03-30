@@ -15,6 +15,7 @@ import pysam
 from pysam import FastaFile
 import argparse
 import subprocess
+from subprocess import Popen, PIPE, STDOUT
 from Bio import SeqIO
 import os
 import glob
@@ -23,15 +24,17 @@ import csv
 import regex
 import sys
 import time
+startTime = time.time()
+
 
 #Assign arguments for command line
 ap = argparse.ArgumentParser()
 
 ap.add_argument("--fastq", help="Directory containing fastq files")
 ap.add_argument("--bamfile", help="Directory containing bamfiles")
-ap.add_argument("--mature", required = True, help="fasta file of mature miRNA sequence")
-ap.add_argument("--hairpin", required = True, help="fasta file of precursor sequence")
-ap.add_argument("--mm", help="Allow up to 1 mismatch in miRNA reads")
+ap.add_argument("--mirnas", required = True, help="fasta file of mature miRNA sequence")
+ap.add_argument("--precursors", required = True, help="fasta file of precursor sequence")
+ap.add_argument("--mm", help="Allow up to 1 mismatch in miRNA reads",metavar='')
 
 args = ap.parse_args()
 
@@ -84,22 +87,28 @@ def score(mir,seq,mirsspos,mirpos,ss):
 #Determine score of candidate miRNA based on criteria outlined in Axtell and Meyers et al 2018.
     reason=[]
     mscore = []
+    criteria=[]
     # Test that precursor is less than 300 nt
     if len(seq)>300:
-        mscore.append(5)
-        reason.append("Precursor > 300 nt")
-    else:
         mscore.append(10)
+        reason.append("Precursor > 300 nt")
+        criteria.append("N")
+    else:
+        mscore.append(25)
+        criteria.append("Y")
         
     #Test length of miRNA
     if (len(mir)>24) or (len(mir)<20):
         mscore.append(0)
         reason.append("miRNA > 24 or < 20")
+        criteria.append("N")
     elif (len(mir)>19) and (len(mir)<23):
-        mscore.append(10)
+        mscore.append(25)
+        criteria.append("Y")
     elif (len(mir)>22) and (len(mir)<25):
-        mscore.append(5)
+        mscore.append(25)
         reason.append("23/24 nt miRNA")
+        criteria.append("23/24")
 
     #Obtain dotbrackets of mir and mirstar
     mirstar_db=ss[mirsspos[0]:mirsspos[1]]
@@ -107,20 +116,32 @@ def score(mir,seq,mirsspos,mirpos,ss):
 
     #Test that mir/mir* duplex does not contain greater than 5 mismatches
     if (mirstar_db.count(".")>5) or (mir_db.count(".") > 5):
-        mscore.append(5)
+        mscore.append(0)
         reason.append("more than 5 mismatches")
+        if (mirstar_db.count("."))>(mir_db.count(".")):
+            criteria.append(mirstar_db.count("."))
+        else:
+            criteria.append(mir_db.count("."))
+
     else:
-        mscore.append(10)
+        mscore.append(25)
+        criteria.append(mir_db.count("."))
+
+
     #Test that mir/miR* does not contain an asymmetric bulge greater than 3    
-    if index_of("....", mirstar) == -1 and index_of("...", mir) != -1:
-        mscore.append(5)
-        reason.append("asymmetric bulge greater than 3")
-    elif index_of("....", mirstar) != -1 and index_of("...", mir) == -1:
-        mscore.append(5)
-        reason.append("asymmetric bulge greater than 3")
-    else:
+    if index_of("....", mirstar_db) == -1 and index_of("....", mir_db) != -1:
         mscore.append(10)
-    return mscore, reason
+        reason.append("asymmetric bulge greater than 3")
+        criteria.append("1")
+    elif index_of("....", mirstar_db) != -1 and index_of("....", mir_db) == -1:
+        mscore.append(10)
+        reason.append("asymmetric bulge greater than 3")
+        criteria.append("1")
+    else:
+        mscore.append(25)
+        criteria.append("0")
+
+    return mscore, reason, criteria
 
 
 def index_of(asym, in_list):
@@ -138,9 +159,9 @@ def is_fasta(filename):
 
 def check_fastas(args):
 #Check that hairpin and miRNA files are FASTA files
-    if is_fasta(args.hairpin) == False:
+    if is_fasta(args.precursors) == False:
         sys.exit("Error: Hairpin file must be in fasta format.")
-    if is_fasta(args.mature) == False:
+    if is_fasta(args.mirnas) == False:
         sys.exit("Error: Mature sequence must be in fasta format.")
 
 def find_indices_of(char, in_string):
@@ -160,13 +181,17 @@ def align_fastqs(args, fastqs):
 #Build index and map hairpins to fastq files
     print("Building index...")
     #Create index of hairpins using bowtie
-    subprocess.call(['bowtie-build', args.hairpin, 'hairpin'])
+    subprocess.call(['bowtie-build', args.precursors, 'hairpin'])
 
+    #Map reads to hairpin
     print("Mapping each fastq file to hairpin...")
     for file in fastqs:
-    #Map each fastq file in directory to index.
-        print("Mapping " + file + "...")
-        subprocess.call(['bowtie', "-a", 'hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"])
+        if args.mm != None:
+            print("Mapping " + file + "with one mismatch...")
+            subprocess.call(['bowtie', "-a","-v1","--no-unal", 'hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"])
+        else:
+            print("Mapping " + file + "...")
+            subprocess.call(['bowtie', "-a","-v0","--no-unal", 'hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"])
 
 def DNAcheck(dna):
 #Check that all characters in provided sequences are ATGCU
@@ -175,28 +200,32 @@ def DNAcheck(dna):
         return(2)
     else:
         return(1)
+    
+def add_values_in_dict(dict, key, list_of_values):
+    if key not in dict:
+        dict[key] = list()
+    dict[key].extend(list_of_values)
+    return dict
 ### _______________________ Code begins __________________________ ###
 
 
 # Read in candidate miRNA hairpin and precursor
-mir_fa = FastaFile(args.mature)
-hairpin_fa = FastaFile(args.hairpin)
+mir_fa = FastaFile(args.mirnas)
+hairpin_fa = FastaFile(args.precursors)
 check_fastas(args)
 
 #Fetch miRNA precursor sequence matching mature candidate miRNA sequence
-mir_dict =  SeqIO.index(args.mature, "fasta")
-hp_dict = SeqIO.index(args.hairpin, "fasta")
+mir_dict =  SeqIO.index(args.mirnas, "fasta")
+hp_dict = SeqIO.index(args.precursors, "fasta")
 
 #***********  Check for miRNA Reads  *****************
 #Initialize dictionary of failed miRNAs and successful candidate miRNAs.
 ## These dictionaries will be used to generate the final output of the program:
 
 #Working list of miRNAs that failed and the first criteria in which they failed.
-failed = {}
-mirnas = {}
-rev_mir={}
 mir_one={}
-subprocess.call(["mkdir","RNAplots"])
+mirna_dict={}
+failed={}
 
 #Check that each miRNA contains only A, T, G, C. If not, add to failed or quit.
 print("Checking hairpin and miRNA sequences...")
@@ -216,246 +245,247 @@ for mir in mir_dict:
     else:
         failed[mir] = "Candidate miRNA does not have a hairpin of the same name"
 
+for x in mir_one:
+    hp=str(hp_dict[x].seq)
+    mir=str(mir_one[x])
+    
+    if mir in hp:
+        # Allow 1-2 positional variance in miRNA position
+        mstart=hp.index(mir)
+        mstop=(hp.index(mir)+len(mir))
+        
+        (ss, mfe)=RNA.fold(hp)
+        if mstart == 0:
+            mirspos=get_s_rels(mstart+1,mstop+1,ss)
+        else:
+            mirspos=get_s_rels(mstart,mstop,ss)
 
-# Check that miRNA does not multimap to hp.
-# Now add sequence with any mismatch to revised miRNAs {rev_mir}.
+        #Python indexing of mir position
+        mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
+        if mirsspos[0] > mirsspos[1]:
+            flag="mirStar not indexable"
+            add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,"NA","NA","NA","NA","NA","NA"])
+        else:
+            mirstar=hp[mirsspos[0]:mirsspos[1]]
+
+            mirpos=[mstart,mstop]
+            result = score(mir,hp,mirsspos,mirpos,ss)        
+            mirstar=hp[mirsspos[0]:mirsspos[1]]
+
+            if len(result[1]) == 0:
+                flag = "NA"
+            else:
+                flag=str(result[1][0])
+            
+            if sum(result[0]) < 80:
+                flag=str(result[1][0])
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,result[2][2],result[2][3]])
+            else:
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",flag,result[2][2],result[2][3]])
+
+    else:
+        failed[x]="miRNA not found in hairpin"
+
 print("Checking hairpin length and multimapping...")
-for name in mir_one:
-    if name in hp_dict:
-        hp=hp_dict[name].seq
-        mir=mir_dict[name].seq
+for cand in list(mirna_dict.keys()):
+    if cand in hp_dict:
+        hp=hp_dict[cand].seq
+        mir=mir_dict[cand].seq
         if (len(hp)<50):
-            failed[name] = "Hairpin is less than 50 basepairs"
+            failed[cand] = "Hairpin is less than 50 basepairs"
+            del mirna_dict[cand]
         else:
             if hp.count(mir)>1:
-                failed[name] = "miRNA multimaps to hairpin" 
+                failed[cand] = "miRNA multimaps to hairpin" 
+                del mirna_dict[cand]
+
+if len(mirna_dict)<1:
+    sys.exit("Error: no candidate miRNAs left to score.")
+
+
+if args.fastq is not None:
+
+##Create a list of all fastq files in provided directory.
+    fastqs=glob.glob(args.fastq + '/*.fastq')
+    if len(fastqs)<2:
+        sys.exit("Error: miRScore requires at least two fastq files.")
+    #Make output directory.
+    subprocess.call(["mkdir","alignments"])
+
+    align_fastqs(args,fastqs)
+
+elif args.bamfile is not None:
+    print("Converting bams to fastq for mapping to hairpin...")
+    bams2convert=glob.glob(args.bamfile + "/*.bam")
+    if len(bams2convert)<2:
+        sys.exit("Error: miRScore requires at least two libraries.")
+    for file in bams2convert:
+        cmd = "samtools bam2fq " + file + ' >' + args.bamfile + Path(file).stem + ".fastq"
+        run(cmd)
+    fastqs=glob.glob(args.bamfile + '/*.fastq')
+    subprocess.call(["mkdir","alignments"])
+    align_fastqs(args,fastqs)
+
+bamfiles=glob.glob('alignments/*.bam')
+
+for bam in bamfiles:
+    print("Beginning bam " + bam + "...")
+    pysam.sort("-o", "alignments/" + Path(bam).stem + "_sorted.bam", bam)
+    pysam.index("alignments/" + Path(bam).stem + "_sorted.bam")
+
+subprocess.call(["mkdir","RNAplots"])
+
+mirna_counts={}
+loci_counts={}
+#Read counting
+bamfiles=glob.glob('alignments/*sorted.bam')
+print("Beginning mirna counts...")
+for bam in bamfiles:
+    print("Checking " + bam + "...")
+    for x in mirna_dict:
+        if mirna_dict[x][11]!="mirStar not indexable":
+            if mirna_dict[x][2] !=0 and mirna_dict[x][6]!=0:
+                mstart_indx=mirna_dict[x][2]-1
+                mstop_indx=mirna_dict[x][3]+1
+                mirstart_indx=mirna_dict[x][6]-1
+                mirstop_indx=mirna_dict[x][7]+1
+                mir=str(mirna_dict[x][0][1:-1])
+                mirstar=mirna_dict[x][4][1:-1]
             else:
-                rev_mir[name]=mir_dict[name].seq 
+                mstart_indx=mirna_dict[x][2]
+                mstop_indx=mirna_dict[x][3]+1
+                mirstart_indx=mirna_dict[x][6]
+                mirstop_indx=mirna_dict[x][7]+1
+                mir=str(mirna_dict[x][0][1:-1])
+                mirstar=mirna_dict[x][4][1:-1]
 
-#Created bam files mapped to hairpin sequences.
-if len(rev_mir)>0:
-    if args.fastq is not None:
-
-        ##Create a list of all fastq files in provided directory.
-        fastqs=glob.glob(args.fastq + '/*.fastq')
-        if len(fastqs)<2:
-            sys.exit("Error: miRScore requires at least two fastq files.")
-        #Make output directory.
-        subprocess.call(["mkdir","alignments"])
-
-        align_fastqs(args,fastqs)
-
-    elif args.bamfile is not None:
-        print("Converting bams to fastq for mapping to hairpin...")
-        bams2convert=glob.glob(args.bamfile + "/*.bam")
-        if len(bams2convert)<2:
-            sys.exit("Error: miRScore requires at least two libraries.")
-        for file in bams2convert:
-            cmd = "samtools bam2fq " + file + ' >' + Path(file).stem + ".fastq"
-            run(cmd)
-        fastqs=glob.glob(args.bamfile + '/*.fastq')
-        subprocess.call(["mkdir","alignments"])
-        align_fastqs(args,fastqs)
-
-    #Create list of bam files from bowtie output.
-    bamfiles=glob.glob('alignments/*.bam')
-
-    #Sort each bamfile and create a dictionary of read counts for each miRNA
-    mircounts = {}
-    for bam in bamfiles:
-        print("Beginning next bam file...")
-        #Sort bam files
-        pysam.sort("-o", "alignments/" + Path(bam).stem + "_sorted.bam", bam)
-        pysam.index("alignments/" + Path(bam).stem + "_sorted.bam")
-
-        #Read in bamfile in pysam format
-        bamfile = pysam.AlignmentFile("alignments/" + Path(bam).stem + "_sorted.bam", "rb")
-
-        #Count the number of reads each miRNA (x) appears in bamfile
-        mir_counts={}
-        save_mir_counts={}
-        for mirName in rev_mir:
-            #Get loci of miRNA
-            mir=str(rev_mir[mirName])
-            hp=str(hp_dict[mirName].seq)
-
-            indices=[]
-            reads=[]
-            for i in find_indices_of(mir, hp):
-                indices.append(i)
-            if len(indices)==1:
-                # Allow 1-2 positional variance in miRNA reads
-                if hp.index(mir)!= 0:
-                    mstart=hp.index(mir) - 1
-                    mstop=mstart+len(mir) + 1
-                else:
-                    mstart=hp.index(mir)
-                    mstop=mstart+len(mir) + 1
-
-                #Count reads of miRNA in bamfile
-                for read in bamfile.fetch(mirName,mstart,mstop):
-                    reads.append(read.seq)
-                if reads.count(mir) > 0:
-                    if mircounts.get(mirName)== None:
-                        #If not in {mircounts}, add it.
-                        #print(x + " not yet in mircounts")
-                        mircounts[mirName]= 1
-                    else:
-                        mircounts[mirName] = mircounts[mirName] + 1
-                else:
-                    if mircounts.get(mirName) == None:
-                        mircounts[mirName] = 0
-                print(mirName + " reads: " + str(reads.count(mir)))
-                save_mir_counts[mirName]=reads.count(mir)
-                reads.clear()
-            else:
-                if failed.get(mirName) == None:
-                    failed[mirName] = "miRNA not found in hairpin"
-
-    #If at least one read of the miRNA (x) is found, add it to {mirnas}. Otherwise add it to {failed}.
-    for x in mircounts:
-        if mircounts[x] > 1:
-            mirnas[x] = rev_mir[x]
-        else:
-            failed[x] = "Not present in more than one library" 
-
-    print(str(len(mirnas)) + " potential miRNAs found.")
-    print(str(len(failed)) + " miRNAs have failed.")
-
-    #***********  STEP 3: Count miR*, score miR/miR*/hairpin, and write output file  *****************
-    #File save
-    header=["miRNA","miRScore","Precursor Length","mir sequence", "miRNA length","mir reads","mir* sequence","miR* Length","mir* reads", "Reasons for failing"]
-    with open('novel_miRNAs.csv', mode='w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-
-        save_mirs_counts={}
-        data=[]
-        mirstar_counts={}
-
-        #retrieve mature sequence for each miRNA in {mirnas} and produce RNAfold structure.
-        for key in mirnas:
-            print(key)
-            #Hairpin sequence
-            seq = str(hp_dict[key].seq)
-            #mature sequence
-            mat = rev_mir[key]
-            #Vienna RNA Fold 
-            (ss, mfe)=RNA.fold(seq)
-
-            #Index mir while allowing 1 nt mismatch
-            m=regex.findall(str(mat) + '{s<=1}', str(seq)) # s<=1 allows 1 mismatch
-
-            #Find start and stop of miR
-            mstart_int=seq.index(m[0])
-            mstop=mstart_int+len(mat)
-            mstart=mstart_int+1
-
-            #Locate start and stop of miR/miR*
-            mirpos=[mstart,mstop]
-            mirspos=get_s_rels(mstart,mstop,ss)
-            #Python indexing of mir position
-            mirsspos=[(mirspos[0]-1),(mirspos[1])]
-            print(mirsspos)
+            #MIR COUNTS
+            command=("samtools view " + bam + " "+ x+":" + str(mstart_indx) + "-"+str(mstop_indx) + "| cut -f10 | grep '" + mir.translate(str.maketrans("uU", "tT")) + "' | wc -l")
+            p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+            output = p.stdout.read()
+            splt = output.decode()
+            count=splt.split()
+            add_values_in_dict(mirna_counts,x,[count[0]])
             
-            #Count if miR* reads are present in bamfiles.
-            reads_mirs=[]
+            
+            #MIRSTAR counts
+            command=("samtools view " + bam + " "+ x+":" + str(mirstart_indx) + "-"+str(mirstop_indx) + "| cut -f10 | grep '" + mirstar.translate(str.maketrans("uU", "tT")) + "' | wc -l")
+            p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+            output = p.stdout.read()
+            splt = output.decode()
+            count=splt.split()
+            add_values_in_dict(mirna_counts,x,[count[0]])
+
+            command=("samtools view " + bam + " "+ x+ "| wc -l")
+            p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+            output = p.stdout.read()
+            splt = output.decode()
+            count=splt.split()
+            add_values_in_dict(loci_counts,x,[int(count[0])])
 
 
-            if mirsspos[0] > mirsspos[1]:
-                failed[key]="miR* is not detectable"
-            else:
-                #Get loci of miRNA
-                hp=hp_dict[key].seq
-                mirstar=hp[mirsspos[0]:mirsspos[1]]
-                print(mirstar)
+for x in mirna_counts:
+    mircounts=[]
+    mirscounts=[]
+    y=int(len(bamfiles))
+    mirstar_reads=(mirna_counts[x][1::y])
+    mir_reads=(mirna_counts[x][::y])
+    for c in mirstar_reads:
+        mirscounts.append(int(c))
+    for c in mir_reads:
+        mircounts.append(int(c))
+    
+    mircount = 0
+    for i in mir_reads:
+        if int(i) > 0:
+            mircount = mircount + 1
+    
+    mirstarCount=0
+    for i in mirstar_reads:
+        if int(i) > 0:
+            mirstarCount = mirstarCount + 1
 
-                #Count miR* reads in bamfiles
-                bamfiles=glob.glob("alignments/*sorted.bam")
-                for bam in bamfiles:
-                    bamfile = pysam.AlignmentFile(bam, "rb")
-                    for read in bamfile.fetch(key,mirsspos[0],mirsspos[1]):
-                        reads_mirs.append(read.seq)
-                    if reads_mirs.count(mirstar) > 0:
-                        if mirstar_counts.get(key)== None:
-                        #If not in {mircounts}, add it.
-                            print(key + " not yet in mircounts")
-                            mirstar_counts[key]= 1
-                        else:
-                            mirstar_counts[key] = mirstar_counts[key] + 1
-                    else:
-                        if mirstar_counts.get(key)== None:
-                            mirstar_counts[key]= 0
-                    print("mir* reads: " + str(reads_mirs.count(mirstar)))
-                    save_mirs_counts[key]=reads_mirs.count(mirstar)
+    if mirstarCount < 2 or mircount <2:
+        mirna_dict[x][10]="Fail"
+        mirna_dict[x][11]="Not present in 2 or more libraries"        
+        print(str(x) + " failed for not being present in two or more libraries.")
+        if sum(loci_counts[x]) != 0:
+            precision="{:.2f}".format((100*(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
+        else:
+            precision= 0
+        add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
 
-                    reads.clear()
-                #If counts detected for miR*, score miRNA and save results.
-                if mirstar_counts[key]!= None:
-                    if mirstar_counts[key] > 1:
-                            print("Scoring miRNA "+ key)
-                            result = score(mat,seq,mirsspos,mirpos,ss)
-                            #print(result[1])
-                            print(result[0])
-                            if len(result[1])>0:
-                                save=[key,result[0],len(seq),str(mat).translate(str.maketrans("tT", "uU")),len(mat),str(save_mir_counts[key]),str(mirstar).translate(str.maketrans("tT", "uU")),len(mirstar),str(save_mirs_counts[key]), result[1]]
-                            else:
-                                save=[key,result[0],len(seq),str(mat).translate(str.maketrans("tT", "uU")),len(mat),str(save_mir_counts[key]),str(mirstar).translate(str.maketrans("tT", "uU")),len(mirstar),str(save_mirs_counts[key])]
-                            data.append(save)
+    else:
+        print("Adding reads to dictionary...")
+        precision=(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])
+        if precision < 0.745:
+            mirna_dict[x][10]="Fail"
+            mirna_dict[x][11]="Precision less than 75%"
+            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
 
-                            #Create ps file from RNAplot
-                            os.chdir('RNAplots')
-                            f= open(key+".fa", "a")
-                            f.write("> " + str(key) + '\n' + str(hp))
-                            f.close()
-                            command=("RNAfold " + key+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirspos[0]) + " " + str(mirspos[1]) + " 8 RED omark'")
-                            print(command)
-                            subprocess.Popen(command, shell=True)
-                            subprocess.call(["rm","*.fa"])
-                            os.chdir('..')
-                    else:
-                        failed[key]="miR* reads not present"
+        else:
+            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
+                                    
 
-        csv_writer.writerow(header)
-        for row in data:
-            csv_writer.writerow(row)
+#subprocess.run(f'samtools merge alignments/all.bam alignments/*.bam', shell=True)
+#subprocess.run(f'samtools sort alignments/all.bam -o alignments/all_sorted.bam', shell=True)
+#subprocess.run(f'samtools index alignments/all_sorted.bam', shell=True)
 
-    #Remove excess bam files and indexes.
-    args =  ('rm', '-rf', 'alignments/*sorted*')
-    subprocess.call('%s %s %s' % args, shell=True)
-    args = ('rm', '-rf', '*ebwt')
-    subprocess.call('%s %s %s' % args, shell=True)
+for mirfail in failed:
+        seq = str(hp_dict[mirfail].seq)
+            #mature sequence
+        mat = str(mir_one[mirfail])
+        mstart=seq.index(mat)
+        mstop=(seq.index(mat)+len(mat))
 
-#Write failed output file for any failed miRNAs.
-faildata=[]
-failheader=["miRNA", "Reason for failing"]
+        (ss, mfe)=RNA.fold(seq)
+        mirspos=get_s_rels(mstart,mstop,ss)
+        #Python indexing of mir position
+        mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
+        mirstar=hp[mirsspos[0]:mirsspos[1]]
+        add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
 
-with open('failed_miRNAs.csv', mode='w', newline='') as csv_file:
-    csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(failheader)
-    for fail in failed:
-        failsave=[fail, failed[fail]]
-        faildata.append(failsave)
-    for rows in faildata:
-        csv_writer.writerow(rows)
+for x in mirna_counts:
+            seq = str(mirna_dict[x][8])
+            #mature sequence
+            mat = str(mirna_dict[x][0])
+            mir=str(mirna_dict[x][4])
+            mstart=int(mirna_dict[x][2])+1
+            mstop=int(mirna_dict[x][3])
+            mirstart=int(mirna_dict[x][6])+1
+            mirstop=int(mirna_dict[x][7])
+            #Create ps file from RNAplot
+            os.chdir('RNAplots')
+            f= open(x+".fa", "a")
+            f.write("> " + str(x) + '\n' + seq)
+            f.close()
+            command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirstart) + " " + str(mirstop) + " 8 RED omark'")
+            subprocess.Popen(command, shell=True)
+            os.chdir('..')
 
-#Remove alignments directory.
-#subprocess.call(["rm","-r","alignments"])
+from csv import writer
+header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","precision"]
+with open("miRScore_results.csv", mode="w", newline='') as csv_out:
+    csv_writer = writer(csv_out)
+    csv_writer.writerow(header)
+    for k, v in mirna_dict.items():
+        csv_writer.writerow([k, *v])
 
-try:
-    data
-except NameError:
-    var_exists = False
-else:
-    var_exists = True
 
-if var_exists == True:
-    print("Summary")
-    print("____________________________________")
-    print("Number of submitted candidate miRNAs: " + str(len(mir_dict)))
-    print("Total number of miRNAs identified with high confidence: " + str(len(data)) )
-    print("Total number of Failed miRNAs: " + str(len(failed)))
-    print('')
-    print(time.strftime("%a %d %b %Y %H:%M:%S %z %Z", time.localtime()))
-    print('Run Completed!')
-else:
-    print("Failed to run")
+print("Summary")
+print("____________________________________")
+print("Number of submitted candidate miRNAs: " + str(len(mir_dict)))
+res_pass = 0
+for key in mirna_dict:
+    if mirna_dict[key][10] == "Pass":
+        res_pass = res_pass + 1
+print("Total number of miRNAs identified with high confidence: " + str(res_pass) )
+res_fail = 0
+for key in mirna_dict:
+    if mirna_dict[key][10] == "Fail":
+        res_fail = res_fail + 1
+print("Total number of Failed miRNAs: " + str(res_fail))
+print('')
+executionTime = (time.time() - startTime)
+print('Time to run: ' + str(executionTime))
+print('Run Completed!')
