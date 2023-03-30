@@ -405,7 +405,7 @@ for x in mirna_counts:
         if int(i) > 0:
             mirstarCount = mirstarCount + 1
 
-    if mirstarCount < 2 or mircount <2:
+    if mirstarCount <1 or mircount <1:
         mirna_dict[x][10]="Fail"
         mirna_dict[x][11]="Not present in 2 or more libraries"        
         print(str(x) + " failed for not being present in two or more libraries.")
@@ -417,7 +417,7 @@ for x in mirna_counts:
 
     else:
         print("Adding reads to dictionary...")
-        precision=(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])
+        precision=(100*((sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
         if precision < 0.745:
             mirna_dict[x][10]="Fail"
             mirna_dict[x][11]="Precision less than 75%"
