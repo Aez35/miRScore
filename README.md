@@ -22,7 +22,7 @@ All dependencies can be install through `conda`. To install and set up `conda`, 
 ### Conda installation on Mac/Linux environment
 
 ```
-conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sra-tools
+conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sra-tools samtools
 ```
 
 
@@ -44,7 +44,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 ## Usage
 ```
-python3.6 miRScore.py [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas MIRNAFILE --precursors PRECURSORFILE [-mm]
+python3.6 miRScore [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas MIRNAFILE --precursors PRECURSORFILE [-mm]
 ```
 
 ## Options
