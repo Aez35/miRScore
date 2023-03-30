@@ -84,7 +84,7 @@ cd ..
 ```
 2. Run miRScore
 ```
-python3.6 miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precursors.fa --fastq fastqs/
+python3.6 miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precursors.fa --bam bamfiles/
 ```
 
 # Output
