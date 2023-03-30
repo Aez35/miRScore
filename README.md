@@ -74,15 +74,16 @@ For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs dow
 
 1. Extract the *Arabidopsis thaliana* entries using the following commands:
 ```
-grep -A 1 '>ath' mature.fa | grep -v '\-\-' | sed 's/ .*//g' > ath_miRNAs.fa
-grep -A 1 '>ath' hairpin.fa | grep -v '\-\-' | sed 's/ .*//g' > ath_precursors.fa
+grep -A 1 '>ath' mature.fa | grep -v '\-\-' | sed 's/ .*//g'|tr '[:lower:]' '[:upper:]'| sed 's/..P//g' > ath_miRNAs.fa
+grep -A 1 '>ath' hairpin.fa | grep -v '\-\-' | sed 's/ .*//g'| tr '[:lower:]' '[:upper:]' > ath_precursors2.fa
 ```
 2. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
 
 ```
 mkdir fastqs
-fasterq-dump SRR3222445 -O fastqs/
-fasterq-dump SRR3269282 -O fastqs/
+cd fastqs
+fasterq-dump SRR3222443 SRR3222444
+cd ..
 ```
 3. Run miRScore
 ```
