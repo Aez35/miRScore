@@ -28,7 +28,7 @@ conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas b
 
 ## miRScore installation
 
-miRScore is run through the python script `miRScore.py`. To install miRScore, download the file `miRScore.py` from github page https://github.com/Aez35/miRScore and place the script in your working directory.
+miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore and place the script in your working directory.
 
     
 ## Required
