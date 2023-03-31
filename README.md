@@ -12,14 +12,14 @@ miRScore is a miRNA scoring tool that analyzes novel miRNAs.
 All dependencies can be install through `conda`. To install and set up `conda`, follow the instructions at https://bioconda.github.io
 
 `Python` >=3.6 https://www.python.org  
-`Biopython` https://biopython.org/
+`Biopython` https://biopython.org/. 
 `Bowtie` >=1.3.1 https://bowtie-bio.sourceforge.net/index.shtml  
 `Samtools` >=1.16 https://www.htslib.org/  
 `ViennaRNA2` >=2.5.1 https://www.tbi.univie.ac.at/RNA/documentation.html  
 `Sratoolkit` https://hpc.nih.gov/apps/sratoolkit.html  
 `Pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html
 
-### Conda installation on Mac/Linux environment
+### Create Conda environment on Mac/Linux environment
 
 ```
 conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sra-tools samtools
@@ -35,11 +35,11 @@ miRScore is run through the python script `miRScore`. To install miRScore, downl
 
 miRScore requires two FASTA files and multiple small RNA-seq libraries in order to run.   
 
-* `--mirnas mirnafile`: mature miRNA sequences of proposed novel miRNAs for scoring.   
-* `--precursors precursorfile`:  hairpin precursors and one containing the hairpin sequences in which the mature miRNAs can be found.  
+* `--mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
+* `--precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
 * `(--fastq fastqDirectory | --bam bamfilesDirectory)`: Directory containing small RNA-seq libraries, either in FASTQ or BAM format.  
 
-**Please note that the sequence identifier of each miRNA must match the sequence identifier of the corresponding hairpin.**
+**Please note that the sequence identifier of each miRNA must match the sequence identifier of the corresponding hairpin precursors.**
 
 
 ## Usage
@@ -88,7 +88,7 @@ python3.6 miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precu
 ```
 
 # Output
-miRScore will have two outputs:
+miRScore has two outputs:
 
 * `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs
 * `RNAplots`: A folder containing .ps files for each miRNA precursor foldback structure, including miR(green)/miR*(red) annotation.
