@@ -301,8 +301,8 @@ for x in mir_one:
         #Python indexing of mir position
         mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
         if mirsspos[0] > mirsspos[1]:
-            flag="mirStar not indexable"
-            add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,"NA","NA","NA","NA","NA","NA"])
+            flag=["mirStar not indexable"]
+            add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",''.join(str(e+",") for e in flag),"NA","NA","NA","NA","NA","NA"])
         else:
             mirstar=hp[mirsspos[0]:mirsspos[1]]
 
@@ -311,15 +311,15 @@ for x in mir_one:
             mirstar=hp[mirsspos[0]:mirsspos[1]]
 
             if len(result[1]) == 0:
-                flag = "NA"
+                flag = ["NA"]
             else:
-                flag=str(result[1])
+                flag=list(result[1])
             
             if sum(result[0]) < 80:
-                flag=str(result[1])
-                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",flag,result[2][2],result[2][3]])
+                flag=result[1]
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",''.join(str(e+",") for e in flag),result[2][2],result[2][3]])
             else:
-                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",flag,result[2][2],result[2][3]])
+                add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),mirsspos[0],mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",''.join(str(e+",") for e in flag),result[2][2],result[2][3]])
 
     else:
         failed[x]="miRNA not found in hairpin"
@@ -386,7 +386,7 @@ print("Beginning mirna counts...")
 for bam in bamfiles:
     print("Checking " + bam + "...")
     for x in mirna_dict:
-        if mirna_dict[x][11]!="mirStar not indexable":
+        if "mirStar not indexable" not in mirna_dict[x][11]:
             if mirna_dict[x][2] !=0 and mirna_dict[x][6]!=0:
                 mstart_indx=mirna_dict[x][2]-1
                 mstop_indx=mirna_dict[x][3]+1
@@ -450,7 +450,7 @@ for x in mirna_counts:
 
     if mirstarCount <1 or mircount <1:
         mirna_dict[x][10]="Fail"
-        mirna_dict[x][11]="Not present in 2 or more libraries"        
+        mirna_dict[x][11]+="Not present in 2 or more libraries"
         print(str(x) + " failed for not being present in two or more libraries.")
         if sum(loci_counts[x]) != 0:
             precision="{:.2f}".format((100*(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
@@ -463,7 +463,7 @@ for x in mirna_counts:
         precision=(100*((sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
         if precision < 75:
             mirna_dict[x][10]="Fail"
-            mirna_dict[x][11]="Precision less than 75%"
+            mirna_dict[x][11]+="Precision less than 75%"
             add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
 
         else:
