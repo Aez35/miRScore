@@ -27,6 +27,8 @@ import sys
 import time
 startTime = time.time()
 
+
+print("Checking required packages...")
 req_packs=["bowtie","samtools","RNAfold"]
 
 for pack in req_packs:
@@ -232,7 +234,18 @@ if isExist==True:
     subprocess.call(["rm","-rf","RNAplots/"])
     print("Removed previous RNAplots folder.")
 
-
+if args.bamfile != None:
+    path=args.bamfile
+    isExist = os.path.exists(path)
+    if isExist!=True:
+        msg="Direcory containing BAM files cannot be found."
+        sys.exit(msg)
+else:
+    path=args.fastq
+    isExist = os.path.exists(path)
+    if isExist!=True:
+        msg="Direcory containing FASTQ files cannot be found."
+        sys.exit(msg)
 
 # Read in candidate miRNA hairpin and precursor
 mir_fa = FastaFile(args.mirnas)
@@ -340,6 +353,7 @@ if args.fastq is not None:
     align_fastqs(args,fastqs)
 
 elif args.bamfile is not None:
+    print(args.bamfile)
     print("Converting bams to fastq for mapping to hairpin...")
     bams2convert=glob.glob(args.bamfile + "/*.bam")
     if len(bams2convert)<2:
