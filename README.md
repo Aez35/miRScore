@@ -11,18 +11,18 @@ miRScore is a miRNA scoring tool that analyzes novel miRNAs.
 ## Dependencies
 All dependencies can be install through `conda`. To install and set up `conda`, follow the instructions at https://bioconda.github.io
 
-`Python` >=3.6 https://www.python.org  
-`Biopython` https://biopython.org/. 
-`Bowtie` >=1.3.1 https://bowtie-bio.sourceforge.net/index.shtml  
-`Samtools` >=1.16 https://www.htslib.org/  
-`ViennaRNA2` >=2.5.1 https://www.tbi.univie.ac.at/RNA/documentation.html  
-`Sratoolkit` https://hpc.nih.gov/apps/sratoolkit.html  
-`Pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html
+`python` >=3.6 https://www.python.org  
+`biopython` https://biopython.org/. 
+`bowtie` >=1.3.1 https://bowtie-bio.sourceforge.net/index.shtml  
+`samtools` >=1.16 https://www.htslib.org/  
+`viennaRNA2` >=2.5.1 https://www.tbi.univie.ac.at/RNA/documentation.html  
+`sratoolkit` https://hpc.nih.gov/apps/sratoolkit.html  
+`pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html
 
 ### Create Conda environment on Mac/Linux environment
 
 ```
-conda create --name miRScore python=3.6 ViennaRNA pysam argparse bowtie pandas biopython regex pathlib sra-tools samtools
+conda create --name miRScore python=3.6 ViennaRNA pysam bowtie pandas biopython sra-tools samtools
 ```
 
 
