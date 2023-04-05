@@ -427,7 +427,7 @@ for bam in bamfiles:
             count=splt.split()
             add_values_in_dict(loci_counts,x,[int(count[0])])
 
-print("Checking miRNA counts now..."
+print("Checking miRNA counts now...")
 for x in tqdm.tqdm(mirna_counts):
     mircounts=[]
     mirscounts=[]
