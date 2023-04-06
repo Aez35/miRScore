@@ -2,9 +2,7 @@
 
 # Description
 
-miRScore is a miRNA scoring tool that analyzes novel miRNAs. 
-
-*The criteria used to determine whether a novel miRNA is of high confidence is outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/).*
+miRScore is a miRNA scoring tool that analyzes novel miRNAs prior to submission to miRBase. This tool can be used to determine whether a miRNA loci is of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA and precursor sequences as well as small RNA-seq data to miRScore, which will output a csv file containing an analysis of each miRNA loci, important information needed to determine confidence in that loci, and a pass/fail result.
 
 # Installation
 
@@ -28,9 +26,21 @@ conda create --name miRScore python=3.6 ViennaRNA pysam bowtie pandas biopython 
 
 ## miRScore installation
 
-miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore and place the script in your working directory.
+miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore.
 
-    
+miRScore can be made executable by doing the following:
+
+Place the `miRScore` script in your conda environment. To locate this loaction, use the following command:
+```
+conda info --envs
+```
+
+Make `miRScore` executable and place in the bin directory of your miRScore conda environment:
+```
+chmod +x miRScore
+mv miRScore /Users/zvaricka/miniconda3/envs/miRScore/bin
+```
+
 ## Required
 
 miRScore requires two FASTA files and multiple small RNA-seq libraries in order to run.   
@@ -44,7 +54,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 ## Usage
 ```
-python3.6 miRScore [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas MIRNAFILE --precursors PRECURSORFILE [-mm]
+miRScore [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas MIRNAFILE --precursors PRECURSORFILE [-mm]
 ```
 
 ## Options
