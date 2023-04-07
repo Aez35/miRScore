@@ -504,6 +504,7 @@ for mirfail in failed:
         mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
         mirstar=hp[mirsspos[0]:mirsspos[1]]
         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
+FNULL = open(os.devnull, 'w')
 
 #Make directories for post-script images
 subprocess.call(["mkdir","strucVis"])
@@ -530,15 +531,28 @@ for x in tqdm.tqdm(mirna_dict,desc="RNAplots"):
             mirstart=int(mirna_dict[x][6]+1)
             mirstop=int(mirna_dict[x][7])
             #Create ps file from RNAplot
-            f= open(x+".fa", "a")
-            f.write("> " + str(x) + '\n' + seq)
-            f.close()
-            command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirstart) + " " + str(mirstop) + " 8 RED omark'")
-            subprocess.Popen(command, shell=True)
-            cmd="mv " + x + "_ss.ps failed"
+            if "Fail" in mirna_dict[x][10]:
+                os.chdir("failed")
+                f= open(x+".fa", "a")
+                f.write("> " + str(x) + '\n' + seq)
+                f.close()
+                command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirstart) + " " + str(mirstop) + " 8 RED omark'")
+                subprocess.Popen(command, shell=True)
+                os.chdir('..')                
+            else:
+                f= open(x+".fa", "a")
+                f.write("> " + str(x) + '\n' + seq)
+                f.close()
+                command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirstart) + " " + str(mirstop) + " 8 RED omark'")
+                subprocess.Popen(command, shell=True)
 os.chdir('..')
 
-FNULL = open(os.devnull, 'w')
+#Remove fasta files from RNAplots direcotry
+cmd="rm -rf RNAplots/*.fa"
+run(cmd)
+cmd="rm -rf RNAplots/failed/*.fa"
+run(cmd)
+
 for x in tqdm.tqdm(mirna_dict,desc="strucVis"):
     #Create strucVis plots for each miRNA
     if "Fail" in mirna_dict[x][10]:
@@ -550,10 +564,6 @@ for x in tqdm.tqdm(mirna_dict,desc="strucVis"):
         cmd="strucVis -b alignments/merged.bam -g " + args.precursors + " -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/" +x+ ".ps -n " + x
         run(cmd)
 
-
-#Remove fasta files from RNAplots direcotry
-cmd="rm -rf RNAplots/*.fa"
-run(cmd)
 cmd="rm -rf samtools*.bam"
 run(cmd)
 
