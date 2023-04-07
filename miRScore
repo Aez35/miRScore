@@ -474,7 +474,7 @@ for x in tqdm.tqdm(mirna_counts,desc="Counting miRNAs"):
         if sum(loci_counts[x]) != 0:
             precision="{:.2f}".format((100*(sum(mircounts)+sum(mirscounts))/sum(loci_counts[x])))
         else:
-            precision= 0
+            precision= 0.00
         add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
     #If reads found in 2 or more libraries, calculate precision and keep status as passed
     else:
@@ -485,10 +485,10 @@ for x in tqdm.tqdm(mirna_counts,desc="Counting miRNAs"):
                 mirna_dict[x][11]="Precision less than 75%"
             else:
                 mirna_dict[x][11]+=";Precision less than 75%"
-            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
+            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),"{:.2f}".format(precision)])
 
         else:
-            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),precision])
+            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),"{:.2f}".format(precision)])
 
 #Add failed miRNAs into dictionary
 for mirfail in failed:
