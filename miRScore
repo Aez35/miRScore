@@ -188,7 +188,7 @@ except ImportError:
 
 def run(cmd) :
 #Run subprocess
-    proc = subprocess.Popen(cmd, shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    proc = subprocess.call(cmd, shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 def align_fastqs(args, fastqs):
 
@@ -547,12 +547,12 @@ for x in tqdm.tqdm(mirna_dict,desc="RNAplots",disable=None):
 os.chdir('..')
 
 #Remove fasta files from RNAplots direcotry
-cmd="rm -rf RNAplots/*.fa"
+cmd="rm -rf RNAplots/passed/*.fa"
 run(cmd)
 cmd="rm -rf RNAplots/failed/*.fa"
 run(cmd)
 
-for x in tqdm.tqdm(mirna_dict,desc="strucVis"):
+for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
     #Create strucVis plots for each miRNA
     if "Fail" in mirna_dict[x][10]:
         hp_len=str(mirna_dict[x][9])
@@ -562,9 +562,6 @@ for x in tqdm.tqdm(mirna_dict,desc="strucVis"):
         hp_len=str(mirna_dict[x][9])
         cmd="strucVis -b alignments/merged.bam -g " + args.precursors + " -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/passed/" +x+ ".ps -n " + x
         run(cmd)
-
-cmd="rm -rf samtools*.bam"
-run(cmd)
 
 #Write final output file
 from csv import writer
@@ -576,6 +573,8 @@ with open("miRScore_results.csv", mode="w", newline='') as csv_out:
         csv_writer.writerow([k, *v])
 
 cmd="rm -rf *.ebwt"
+run(cmd)
+cmd="rm -rf *.fai"
 run(cmd)
 cmd="rm -rf *.fai"
 run(cmd)
@@ -597,4 +596,3 @@ print('')
 executionTime = (time.time() - startTime)
 print('Time to run: ' + str(executionTime))
 print('Run Completed!')
-
