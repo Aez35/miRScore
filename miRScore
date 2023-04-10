@@ -188,31 +188,33 @@ def find_indices_of(char, in_string):
             break
         yield index
 
-def runs(cmd) :
-#Run command for samtools
-    proc = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+
+try:
+    from subprocess import DEVNULL  # Python 3.
+except ImportError:
+    DEVNULL = open(os.devnull, 'wb')
+
 
 def run(cmd) :
-#Run command for samtools
-    proc = subprocess.call(cmd, shell=True,stdout=FNULL)
+#Run subprocess
+    proc = subprocess.Popen(cmd, shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 def align_fastqs(args, fastqs):
-    FNULL = open(os.devnull, 'w')
 
 #Build index and map hairpins to fastq files
     print("Building index...")
     #Create index of hairpins using bowtie
-    subprocess.call(['bowtie-build', args.precursors, 'hairpin'],stdout=FNULL,stderr=subprocess.STDOUT)
+    subprocess.call(['bowtie-build', args.precursors, 'hairpin'],stdout=DEVNULL,stderr=subprocess.STDOUT)
 
     #Map reads to hairpin
     print("Mapping each fastq file to hairpin...")
     for file in fastqs:
         if args.mm != None:
             print("Mapping " + file + "with one mismatch...")
-            subprocess.call(['bowtie', "-a","-v1","--no-unal", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=FNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-a","-v1","--no-unal", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
         else:
             print("Mapping " + file + "...")
-            subprocess.call(['bowtie', "-a","-v0","--no-unal", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=FNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-a","-v0","--no-unal", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
 
 def DNAcheck(dna):
 #Check that all characters in provided sequences are ATGCU
@@ -375,7 +377,7 @@ elif args.bamfile is not None:
         sys.exit("Error: miRScore requires at least two libraries.")
     for file in bams2convert:
         cmd = "samtools bam2fq " + file + ' >' + args.bamfile + Path(file).stem + ".fastq"
-        runs(cmd)
+        run(cmd)
     fastqs=glob.glob(args.bamfile + '*.fastq')
     subprocess.call(["mkdir","alignments"])
     align_fastqs(args,fastqs)
@@ -504,20 +506,23 @@ for mirfail in failed:
         mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
         mirstar=hp[mirsspos[0]:mirsspos[1]]
         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA"])
-FNULL = open(os.devnull, 'w')
+DEVNULL = open(os.devnull, 'w')
 
 #Make directories for post-script images
 subprocess.call(["mkdir","strucVis"])
 subprocess.call(["mkdir","strucVis/failed"])
+subprocess.call(["mkdir","strucVis/passed"])
 subprocess.call(["mkdir","RNAplots"])
 subprocess.call(["mkdir","RNAplots/failed"])
+subprocess.call(["mkdir","RNAplots/passed"])
+
 
 #Merge library files
 cmd="samtools merge alignments/merged.bam alignments/*sorted.bam"
-runs(cmd)
+run(cmd)
 print("Indexing merged bamfile...")
 cmd="samtools index alignments/merged.bam"
-runs(cmd)
+run(cmd)
 
 #Create RNAplots depicting miRNA loci
 os.chdir('RNAplots')
@@ -540,11 +545,14 @@ for x in tqdm.tqdm(mirna_dict,desc="RNAplots"):
                 subprocess.Popen(command, shell=True)
                 os.chdir('..')                
             else:
+                os.chdir("passed")
                 f= open(x+".fa", "a")
                 f.write("> " + str(x) + '\n' + seq)
                 f.close()
                 command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 GREEN omark " + str(mirstart) + " " + str(mirstop) + " 8 RED omark'")
                 subprocess.Popen(command, shell=True)
+                os.chdir('..')                
+
 os.chdir('..')
 
 #Remove fasta files from RNAplots direcotry
@@ -561,7 +569,7 @@ for x in tqdm.tqdm(mirna_dict,desc="strucVis"):
         run(cmd)
     else:
         hp_len=str(mirna_dict[x][9])
-        cmd="strucVis -b alignments/merged.bam -g " + args.precursors + " -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/" +x+ ".ps -n " + x
+        cmd="strucVis -b alignments/merged.bam -g " + args.precursors + " -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/passed/" +x+ ".ps -n " + x
         run(cmd)
 
 cmd="rm -rf samtools*.bam"
@@ -576,6 +584,10 @@ with open("miRScore_results.csv", mode="w", newline='') as csv_out:
     for k, v in mirna_dict.items():
         csv_writer.writerow([k, *v])
 
+cmd="rm -rf *.ebwt"
+run(cmd)
+cmd="rm -rf *.fai"
+run(cmd)
 
 print("Summary")
 print("____________________________________")
@@ -594,3 +606,4 @@ print('')
 executionTime = (time.time() - startTime)
 print('Time to run: ' + str(executionTime))
 print('Run Completed!')
+
