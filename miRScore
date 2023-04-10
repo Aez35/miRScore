@@ -289,7 +289,7 @@ for mir in mir_dict:
         failed[mir] = "Candidate miRNA does not have a hairpin of the same name"
 
 #Score miRNA criteria for hairpin length, mismatches, and bulges
-for x in tqdm.tqdm(mir_one, desc="Scoring miRNAs"):
+for x in tqdm.tqdm(mir_one, desc="Scoring miRNAs",disable=None):
     hp=str(hp_dict[x].seq)
     mir=str(mir_one[x])
     
@@ -393,7 +393,7 @@ if len(bamfiles)==0:
 print("Counting reads for each miRNA loci...")
 for bam in bamfiles:
     print("Checking " + bam + "...")
-    for x in tqdm.tqdm(mirna_dict):
+    for x in tqdm.tqdm(mirna_dict,disable=None):
         if "mirStar not indexable" not in mirna_dict[x][11]:
             if mirna_dict[x][2] !=0 and mirna_dict[x][6]!=0:
                 mstart_indx=mirna_dict[x][2]-1
@@ -436,7 +436,7 @@ for bam in bamfiles:
             add_values_in_dict(loci_counts,x,[int(count[0])])
 
 #Count number of reads for each miRNA loci
-for x in tqdm.tqdm(mirna_counts,desc="Counting miRNAs"):
+for x in tqdm.tqdm(mirna_counts,desc="Counting miRNAs",disable=None):
     mircounts=[]
     mirscounts=[]
     y=int(len(bamfiles))
@@ -517,7 +517,7 @@ run(cmd)
 
 #Create RNAplots depicting miRNA loci
 os.chdir('RNAplots')
-for x in tqdm.tqdm(mirna_dict,desc="RNAplots"):
+for x in tqdm.tqdm(mirna_dict,desc="RNAplots",disable=None):
             seq = str(mirna_dict[x][8])
             #mature sequence
             mat = str(mirna_dict[x][0])
