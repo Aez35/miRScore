@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 
-# miRScore is a miRNA scoring tool. 
-# Its function is to determine if previously annotated miRNA candidates are of high confidence.
-# It does by analyzing the sequences of the candidate miRNA and it's hairpin precursor.
-# Fastq files containing reads of the proposed miRNAs must be provided as evidence.
-# The first step is to quantify reads of each candidate miRNA and ensure it is present in at least 2 libraries.
-# Next, the structure of the candidate miRNA is scored accordingly to criteria in Axtell and Meyers (2018).
-# The output file contains a list of successful candidates, their scores, and details about each successful candidate.
-# Additional outputs include the failed miRNAs and the step in which they failed.
-
 import RNA
 import re
 import pandas as pd
