@@ -10,11 +10,11 @@ miRScore is a miRNA scoring tool that was developed to analyze novel miRNAs prio
 All dependencies can be install through `conda`. To install and set up `conda`, follow the instructions at https://bioconda.github.io
 
 `python` >=3.6 https://www.python.org  
-`biopython` https://biopython.org/. 
+`biopython` https://biopython.org/  
 `bowtie` >=1.3.1 https://bowtie-bio.sourceforge.net/index.shtml  
 `samtools` >=1.16 https://www.htslib.org/  
 `viennarna` >=2.5.1 https://www.tbi.univie.ac.at/RNA/documentation.html  
-`pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html
+`pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html  
 `tqdm` >=4.65 https://pypi.org/project/tqdm/  
 `pandas`>=2.0.0 https://pandas.pydata.org/  
 
