@@ -99,10 +99,10 @@ miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precursors.fa -
 ```
 
 # Output
-miRScore has two outputs:
+miRScore has three outputs:
 
 * `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs
-* `RNAplots`: Directory containing post-script images for each miRNA secondary structure including miR(green)/miR*(red) annotation.
+* `RNAplots`: Directory containing post-script images for each miRNA secondary structure including miR(red)/miR*(green) annotation.
 * `strucVis`: Directory containing post-script images depicting miRNA secondary structure and small RNA read depth for each miRNA loci.
 
 ### miRScore_Results.csv
