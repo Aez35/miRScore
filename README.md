@@ -133,7 +133,7 @@ This file contains the results for all candidate miRNAs submitted to miRScore.
 
 Directory containing .ps files of miRNA secondary structure. This structure is predicted using Vienna RNAfold. For more information on RNA predicted structures, please visit [ViennaRNA page](https://www.tbi.univie.ac.at/RNA/index.html).
 
-Each file contains the hairpin sequence for a miRNA, as well as annotation for the miRNA and predicted miRNA* sequences. The miRNA is outlined in green, while the miRNA* is outlined in red.
+Each file contains the hairpin sequence for a miRNA, as well as annotation for the miRNA and predicted miRNA* sequences. The miRNA is outlined in red, while the miRNA* is outlined in green.
 <img width="623" alt="image" src="https://user-images.githubusercontent.com/88506527/230966219-33cc6f62-a1dc-46fe-8541-176ef43cca88.png">
 
 ### strucvis_plots
