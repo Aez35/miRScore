@@ -2,7 +2,7 @@
 
 # Description
 
-miRScore is a miRNA scoring tool that was developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether a miRNA loci is of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA and precursor sequences as well as small RNA-seq data to miRScore, which will output a csv file containing information on each miRNA loci and a pass/fail result.
+miRScore is a miRNA scoring tool that was developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether a miRNA loci is of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA and precursor sequences as well as small RNA-seq data to miRScore, which will output a .csv file containing information on each miRNA loci and a pass/fail result.
 
 # Installation
 
@@ -46,16 +46,16 @@ mv miRScore /Users/zvaricka/miniconda3/envs/miRScore/bin
 
 miRScore requires two FASTA files and multiple small RNA-seq libraries in order to run.   
 
-* `--mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
-* `--precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `(--fastq fastqDirectory | --bam bamfilesDirectory)`: Directory containing small RNA-seq libraries, either in FASTQ or BAM format.  
+* `-mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
+* `-precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
+* `(-fastq fastqDirectory | -bam bamfilesDirectory)`: Directory containing small RNA-seq libraries, either in FASTQ or BAM format. The specified directory should only contain **unique individual libraries**. miRScore will include any file with a '.bam' or '.fastq' extension according to which option is used. Please be sure to remove any merged library files before running miRScore.
 
 **Please note that the sequence identifier of each miRNA must match the sequence identifier of the corresponding hairpin precursors.**
 
 
 ## Usage
 ```
-miRScore [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas MIRNAFILE --precursors PRECURSORFILE [-mm]
+miRScore [-help] ([-fastq fastqDirectory]|[-bam bamfilesDirectory]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm]
 ```
 
 ## Options
@@ -68,6 +68,7 @@ miRScore [--help] ([--fastq fastqDirectory]|[--bam bamfilesDirectory]) --mirnas 
 |fastq      | Directory containing two or more fastq files                |
 |bam        | Directory containing two or more bam files                  |
 |mm         | Allow up to 1 mismatch in miRNA reads                       |
+
 
 ### Bowtie
 
@@ -95,7 +96,7 @@ cd ..
 ```
 2. Run miRScore
 ```
-miRScore --mirnas ath_miRBase_miRNAs.fa --precursors ath_miRBase_precursors.fa --bam bamfiles/
+miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -bam bamfiles/
 ```
 
 # Output
@@ -126,7 +127,7 @@ This file contains the results for all candidate miRNAs submitted to miRScore.
 * `mReads` - Sum of reads in all libraries that mapped to miRNA loci +/- 1 position.  
 * `msReads` - Sum of reads in all libraries that mapped to miRStar loci +/- 1 position.  
 * `totReads` - Total reads mapped to hairpin precursor across all libraries.  
-* `precision` - Measure of read precision at miRNA loci. Found by totaling the number of reads for miR and miRStar, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
+* `precision_score` - Measure of read precision at miRNA loci. Found by totaling the number of reads for miR and miRStar, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
 
 
 ### RNAplots
