@@ -96,7 +96,7 @@ cd ..
 ```
 2. Run miRScore
 ```
-miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -bam bamfiles/
+miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -fastq fastqs/SRR3222445.fastq
 ```
 
 # Output
