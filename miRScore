@@ -425,7 +425,7 @@ def main():
 
 
                 #MIR COUNTS
-                command=("samtools view -F 16 -e 'pos>=" +str(mstart_indx-2)+ " && endpos<=" + str(mstop_indx+2)+ "' alignments/merged.bam "+ x+" | grep '"+Path(bam).stem+"' | wc -l")
+                command=("samtools view -F 16 -e 'pos>=" +str(mstart_indx)+ " && endpos<=" + str(mstop_indx)+ "' alignments/merged.bam "+ x+" | grep '"+Path(bam).stem+"' | wc -l")
                 p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
                 output = p.stdout.read()
                 splt = output.decode()
@@ -434,7 +434,7 @@ def main():
                 
                 
                 #MIRSTAR counts
-                command=("samtools view -F 16 -e 'pos>=" +str(mirstart_indx-1)+ " && endpos<=" + str(mirstop_indx+1)+ "' alignments/merged.bam " + x+"|grep '"+Path(bam).stem+"' | wc -l")
+                command=("samtools view -F 16 -e 'pos>=" +str(mirstart_indx)+ " && endpos<=" + str(mirstop_indx)+ "' alignments/merged.bam " + x+"|grep '"+Path(bam).stem+"' | wc -l")
                 p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
                 output = p.stdout.read()
                 splt = output.decode()
