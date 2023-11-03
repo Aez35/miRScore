@@ -41,6 +41,9 @@ ap.add_argument("-mirnas", required = True, help="fasta file of mature miRNA seq
 ap.add_argument("-precursors", required = True, help="fasta file of precursor sequence")
 ap.add_argument("-mm", help="Allow up to 1 mismatch in miRNA reads",metavar='')
 ap.add_argument("-n", help="Results file name",metavar='')
+ap.add_argument("-nostrucvis", help="Do not include StrucVis output")
+ap.add_argument("-threads", help="Specify number of threads for bam2fq", metavar='')
+
 
 args = ap.parse_args()
 
@@ -366,16 +369,30 @@ def main():
 
     #If argument -bam used, convert BAMs to FASTQs and then map to hairpins
     elif args.bamfile is not None:
-        print("Converting BAM to FASTQ for mapping to hairpin...")
-        bams2convert=list(args.bamfile)
-        print("Number of bam files detected:" + str(len(bams2convert)))
-        fastqs=[]
-        for file in bams2convert:
-            cmd = "samtools bam2fq " + file + ' >' + Path(file).stem + ".fastq"
-            run(cmd)
-            fastqs.append(Path(file).stem + ".fastq")
-        subprocess.call(["mkdir","alignments"])
-        align_fastqs(args,fastqs)
+        if args.threads is not None:
+            subprocess.call(["mkdir","ms_fastqs"])
+            print("Converting BAM to FASTQ for mapping to hairpin...")
+            bams2convert=list(args.bamfile)
+            print("Number of bam files detected:" + str(len(bams2convert)))
+            fastqs=[]
+            for file in bams2convert:
+                cmd = "samtools bam2fq -@ " + args.threads + " " + file + ' > ms_fastqs/' + Path(file).stem + ".fastq"
+                run(cmd)
+                fastqs.append("ms_fastqs/" + Path(file).stem + ".fastq")
+            subprocess.call(["mkdir","alignments"])
+            align_fastqs(args,fastqs)
+        else:
+            subprocess.call(["mkdir","ms_fastqs"])
+            print("Converting BAM to FASTQ for mapping to hairpin...")
+            bams2convert=list(args.bamfile)
+            print("Number of bam files detected:" + str(len(bams2convert)))
+            fastqs=[]
+            for file in bams2convert:
+                cmd = "samtools bam2fq " + file + ' > ms_fastqs/' + Path(file).stem + ".fastq"
+                run(cmd)
+                fastqs.append("ms_fastqs/" + Path(file).stem + ".fastq")
+            subprocess.call(["mkdir","alignments"])
+            align_fastqs(args,fastqs)
 
     bamfiles=glob.glob('alignments/*.bam')
 
@@ -408,12 +425,12 @@ def main():
     rgs=[]
     bam_input = pysam.AlignmentFile("alignments/merged.bam", 'rb')
     rg=bam_input.header["RG"]
-    for group in 0,len(rg)-1:
+    for group in range(0,len(rg)):
         for values in rg[group].values():
             rgs.append(values)
 
     #Count number of reads for each miRNA loci
-    print("Counting reads for each miRNA loci...")
+    print("Counting reads for each miRNA locus...")
     for bam in rgs:
         print("Counting reads in " + bam + "...")
         for x in tqdm.tqdm(mirna_dict,disable=None):
@@ -470,13 +487,13 @@ def main():
     df=pd.DataFrame.from_dict(mirna_counts, orient='index')
     index=[]
     for x in mirna_counts:
-        for bam in bamfiles:
+        for bam in rgs:
             index.append(x)
     df2=pd.DataFrame(df.values.reshape(-1, 5),columns=['library','mReads','msReads','allReads','precision'])
     df2.index=index
     #Add pass/fail column
     df2['precision'] = df2['precision'].astype('float')
-    df2['result'] = np.where(df2['precision']>=75, 'Pass','Fail')
+    df2['result'] = np.where((df['mReads']>0) & (df['precision']>=75) & (df['msReads']>0),'Pass','Fail')
     #Save reads file to csv
     if args.n != None:
         df2.to_csv(args.n+'_reads.csv', sep=',', encoding='utf-8', index_label='miRNA')
@@ -526,9 +543,13 @@ def main():
             mirsc=0
             #Number of libraries with mir/mir* reads and precision greater than 75
             count=0
+            #mirReads
             mr=0
+            #mirstarReads
             ms=0
+            #Total reads
             all=0
+            #Total precision across libraries counted in results
             precSum=0
             #Count libraries that have reads present
             for i in range(0,len(mir_reads)):
@@ -590,9 +611,7 @@ def main():
         else:
             mat = str(mir_dict[mirfail].seq)
             add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),"NA","NA","NA","NA","NA","NA","NA","NA","Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
-
     DEVNULL = open(os.devnull, 'w')
-
 
     #Write final output file
     if args.n != None:
@@ -634,17 +653,17 @@ def main():
     print("miRNAs predicted from failed miRNAs:")
     print(len(alt_mrnas))
 
+#Score alternative miRNAs
     for x in tqdm.tqdm(alt_mrnas, desc="Scoring alternative miRNAs",disable=None):
         hp=str(hp_dict[x].seq)
         mir=str(alt_mrnas[x])
         
         if mir in hp:
-            # Allow 1-2 positional variance in miRNA position
             mstart=hp.index(mir)
             mstop=(hp.index(mir)+len(mir))
-            
+            #RNAfold each hairpin
             (ss, mfe)=RNA.fold(hp)
-
+            #Dotbracket structure
             mir_ss=ss[mstart:mstop]
 
             if mstart == 0:
@@ -802,36 +821,38 @@ def main():
     else:
         from csv import writer
         header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","nlibraries","precision_score"]
-        with open("alternate_mirna_results.csv", mode="w", newline='') as csv_out:
+        with open("alt_mirna_results.csv", mode="w", newline='') as csv_out:
             csv_writer = writer(csv_out)
             csv_writer.writerow(header)
             for k, v in pred_dict.items():
                 csv_writer.writerow([k, *v])
                 
     #Make directories for post-script images
-    subprocess.call(["mkdir","strucVis"])
-    subprocess.call(["mkdir","strucVis/failed"])
-    subprocess.call(["mkdir","strucVis/passed"])
+
     subprocess.call(["mkdir","RNAplots"])
     subprocess.call(["mkdir","RNAplots/failed"])
     subprocess.call(["mkdir","RNAplots/passed"])
 
+    if args.nostrucvis == None:
+        #Index hairpins for StrucVis and make directories
+        subprocess.call(["mkdir","strucVis"])
+        subprocess.call(["mkdir","strucVis/failed"])
+        subprocess.call(["mkdir","strucVis/passed"])
+        cmd='samtools faidx tmp.prec.fa'
+        run(cmd)
 
-    #Index hairpins for StrucVis
-    cmd='samtools faidx tmp.prec.fa'
-    run(cmd)
 
-    for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
-        if mirna_dict[x][11]!="No hairpin detected" and mirna_dict[x][11]!="Hairpin structure invalid":
-            #Create strucVis plots for each miRNA
-            if "Fail" in mirna_dict[x][10]:
-                hp_len=str(mirna_dict[x][9])
-                cmd="strucVis -b alignments/merged.bam -g tmp.prec.fa -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/failed/" +x+ ".ps -n " + x
-                run(cmd)
-            else:
-                hp_len=str(mirna_dict[x][9])
-                cmd="strucVis -b alignments/merged.bam -g tmp.prec.fa -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/passed/" +x+ ".ps -n " + x
-                run(cmd)
+        for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
+            if mirna_dict[x][11]!="No hairpin detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+                #Create strucVis plots for each miRNA
+                if "Fail" in mirna_dict[x][10]:
+                    hp_len=str(mirna_dict[x][9])
+                    cmd="strucVis -b alignments/merged.bam -g tmp.prec.fa -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/failed/" +x+ ".ps -n " + x
+                    run(cmd)
+                else:
+                    hp_len=str(mirna_dict[x][9])
+                    cmd="strucVis -b alignments/merged.bam -g tmp.prec.fa -c "+ x + ":1-" + hp_len + " -s plus -p strucVis/passed/" +x+ ".ps -n " + x
+                    run(cmd)
 
 
     #Create RNAplots depicting miRNA loci
@@ -869,6 +890,8 @@ def main():
     cmd="rm -rf RNAplots/failed/*.fa"
     run(cmd)
     cmd="rm -rf *.ebwt|rm -rf *.fai|rm -rf tmp* | rm -rf alignmnets/*bai"
+    run(cmd)
+    cmd="rm -rf ms_fastqs/"
     run(cmd)
 
 
