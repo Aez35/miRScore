@@ -493,7 +493,9 @@ def main():
     df2.index=index
     #Add pass/fail column
     df2['precision'] = df2['precision'].astype('float')
-    df2['result'] = np.where((df['mReads']>0) & (df['precision']>=75) & (df['msReads']>0),'Pass','Fail')
+    df2["mReads"] = df2["mReads"].astype(int)
+    df2["msReads"] = df2["msReads"].astype(int)
+    df2['result'] = np.where((df2['mReads']>0) & (df2['precision']>=75) & (df2['msReads']>0),'Pass','Fail')
     #Save reads file to csv
     if args.n != None:
         df2.to_csv(args.n+'_reads.csv', sep=',', encoding='utf-8', index_label='miRNA')
