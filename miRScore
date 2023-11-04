@@ -39,9 +39,9 @@ ap.add_argument('-bamfile',nargs='*',help='One or more BAM alignment files')
 ap.add_argument('-fastq',nargs='*',help='One or more fastq alignment files')
 ap.add_argument("-mirnas", required = True, help="fasta file of mature miRNA sequence")
 ap.add_argument("-precursors", required = True, help="fasta file of precursor sequence")
-ap.add_argument("-mm", help="Allow up to 1 mismatch in miRNA reads",action='store_true')
-ap.add_argument("-n", help="Results file name",metavar='outputName')
-ap.add_argument("-nostrucvis", help="Do not include StrucVis output", action='store_true')
+ap.add_argument("-mm", help="Allow up to 1 mismatch in miRNA reads", nargs='?', const='')
+ap.add_argument("-n", help="Results file name")
+ap.add_argument("-nostrucvis", help="Do not include StrucVis output",  nargs='?', const='')
 ap.add_argument("-threads", help="Specify number of threads for bam2fq")
 
 
