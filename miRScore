@@ -886,7 +886,34 @@ def main():
                     os.chdir('..')                
     os.chdir('..')
 
-    #Remove fasta files from RNAplots direcotry
+
+    #Add legend to passed RNAplots
+    files=glob.glob("RNAplots/passed/*.fa")
+    for file in files:
+        x=Path(file).stem
+        mstart=int(mirna_dict[x][2])
+        mstop=int(mirna_dict[x][3])
+        mirstart=int(mirna_dict[x][6])
+        mirstop=int(mirna_dict[x][7])
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/passed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/passed/"+x+"_plot.ps"
+        run(cmd)
+
+    #Add legend to failed RNAplots
+    files=glob.glob("RNAplots/failed/*.fa")
+    for file in files:
+        x=Path(file).stem
+        mstart=int(mirna_dict[x][2])
+        mstop=int(mirna_dict[x][3])
+        mirstart=int(mirna_dict[x][6])
+        mirstop=int(mirna_dict[x][7])
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
+        run(cmd)
+
+#Remove unecessary files
+    cmd="rm -rf RNAplots/passed/*_ss.ps*"
+    run(cmd)
+    cmd="rm -rf RNAplots/failed/*_ss.ps*"
+    run(cmd)
     cmd="rm -rf RNAplots/passed/*.fa"
     run(cmd)
     cmd="rm -rf RNAplots/failed/*.fa"
@@ -896,34 +923,6 @@ def main():
     cmd="rm -rf ms_fastqs/"
     run(cmd)
 
-
-    #Add legend to passed RNAplots
-    files=os.listdir("RNAplots/passed")
-    for file in files:
-        x=Path(file).stem.split('_')[0]
-        mstart=int(mirna_dict[x][2])
-        mstop=int(mirna_dict[x][3])
-        mirstart=int(mirna_dict[x][6])
-        mirstop=int(mirna_dict[x][7])
-        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/passed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/passed/"+x+"_plot.ps"
-        run(cmd)
-
-    cmd="rm -rf RNAplots/passed/*_ss.ps*"
-    run(cmd)
-
-    #Add legend to failed RNAplots
-    files=os.listdir("RNAplots/failed")
-    for file in files:
-        x=Path(file).stem.split('_')[0]
-        mstart=int(mirna_dict[x][2])
-        mstop=int(mirna_dict[x][3])
-        mirstart=int(mirna_dict[x][6])
-        mirstop=int(mirna_dict[x][7])
-        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
-        run(cmd)
-
-    cmd="rm -rf RNAplots/failed/*_ss.ps*"
-    run(cmd)
 
     print("Summary")
     print("____________________________________")
