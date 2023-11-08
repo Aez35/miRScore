@@ -626,7 +626,7 @@ def main():
                 csv_writer.writerow([k, *v])
     else:
         from csv import writer
-        header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","numLibraries","precisionScore"]
+        header=["name","mSeq","mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","numLibraries","precisionScore"]
         with open("miRScore_results.csv", mode="w", newline='') as csv_out:
             csv_writer = writer(csv_out)
             csv_writer.writerow(header)
@@ -814,7 +814,7 @@ def main():
 
     if args.n != None:
         from csv import writer
-        header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","nlibraries","precision_score"]
+        header=["name","mSeq","mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","nlibraries","precision_score"]
         with open(args.n+"_predcted_mirna_results.csv", mode="w", newline='') as csv_out:
             csv_writer = writer(csv_out)
             csv_writer.writerow(header)
@@ -822,7 +822,7 @@ def main():
                 csv_writer.writerow([k, *v])
     else:
         from csv import writer
-        header=["name","mSeq"," mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","nlibraries","precision_score"]
+        header=["name","mSeq","mLen","mStart","mStop","msSeq","msLen","msStart",'msStop',"precSeq","precLen","result", "flags","mismatches","bulges",'mReads','msReads',"totReads","nlibraries","precision_score"]
         with open("alt_mirna_results.csv", mode="w", newline='') as csv_out:
             csv_writer = writer(csv_out)
             csv_writer.writerow(header)
