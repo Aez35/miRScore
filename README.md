@@ -90,8 +90,9 @@ For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs dow
 ```
 mkdir bamfiles
 cd bamfiles
-wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR5295846_trimmedSingle.bam
-wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR5151110_trimmedSingle.bam
+wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222445_trimmedSingle.bam
+wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222444_trimmedSingle.bam
+wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222443_trimmedSingle.bam
 cd ..
 ```
 2. Run miRScore
