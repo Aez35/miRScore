@@ -4,6 +4,23 @@
 
 miRScore is a miRNA validation tool developed to analyze novel plant miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether plant miRNA loci are of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA and precursor sequences as well as small RNA-seq data to miRScore, which will score each miRNA locus and output a results.csv file containing information and a pass/fail result for each locus.
 
+**Determining what is a 'miRNA'**
+
+Plant miRNAs are detemined based on several structural and quantitative characteristics. This criteria can be found in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Here is a short summary of criteria that miRScore uses to determine if a submitted sequence is a miRNA:
+
+|Criteria                                                                |
+|:----------------------------------------------------------------------:|
+|Less than 5 mismatches in miRNA duplex                                  |
+|There must not be more than 3 nucleotides in asymmetric bulges          |
+|2 nucleotide 3' overhang of miRNA duplex                                |
+|No secondary stems or large loops in miRNA duplex                       |
+|miRNA precursor sequence must be less than 300 nucleotides              |
+|miRNA must be between 20 to 24 nucleotides                              |
+|Confirmation of the miRNA and miRNA* by sRNA-seq only                   |
+|At least 75% of reads that map to precursor must come from miRNA duplex |
+
+miRScore scores miRNAs based on these conditions, but with some leniency for certain criteria. These exceptions include *miRNAs between 23/24 nt and those with precursors greater than 300 nt*. Instead of treating these as a failed locus, miRScore will report a flag (see flags section for details) indicating that miRNA locus contains one or both of these characteristics. If all other criteria is met, that locus will pass. In addition to these leniencies, miRScore utilizes a read floor instead of requiring multiple libraries have sufficient reads of a miRNA locus. This means that if at least 10 reads map to the miRNA locus in at least one library, that miRNA will have met the criteria. If all other criteria are met, that miRNA will pass.
+
 # Installation
 
 ## Dependencies
@@ -136,6 +153,12 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 * `precisionScore` - Measure of read precision at miRNA locus. Found by totaling the number of reads for miR and miR*, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
 
 In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a read floor of 10 reads within a single library when evaluation all miRNAs, but no longer requires replication. This means that at least 10 combined miR/miR* reads must be detected in a single library in order for a miRNA to 'Pass'. At least one miR and miR* must still be detected within a library. For example, 9 miR reads and 2 miR* reads in a library will meet this criteria, while 10 miR reads and 0 miR* reads will not.
+
+  #### flags
+
+
+### alt_miRScore_Results.csv
+When a miRNA 'fails' miRScore, meaning that not all 
 
 ### RNAplots
 
