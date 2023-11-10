@@ -48,14 +48,14 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 * `-mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `(-fastq fastqfiles | -bam bamfiles)`: Small RNA-seq libraries, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
+* `(-fastq fastqfiles | -bamfile bamfiles)`: Small RNA-seq libraries, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
 
 **Please note that the sequence identifier of each miRNA must match the sequence identifier of the corresponding hairpin precursors.**
 
 
 ## Usage
 ```
-miRScore [-help] ([-fastq fastqfiles]|[-bam bamfiles]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm] [-n]
+miRScore [-help] ([-fastq FASTQFILES]|[-bamfile BAMFILES]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm] [-n NAME] [-threads THREADS]
 ```
 
 ## Options
@@ -69,9 +69,9 @@ miRScore [-help] ([-fastq fastqfiles]|[-bam bamfiles]) -mirnas MIRNAFILE -precur
 |bam        | List of small RNA-seq libraries in bam format               |
 |mm         | Allow up to 1 mismatch in miRNA reads                       |
 |n          | Specify a name to be added at the beginning of output files |
+|threads    | Specify number of threads to use during bam2fastq step      |
 
 ### Bowtie
-
 Bowtie has been configured to run the following options.
 
 - a, Report all valid alignments
@@ -105,6 +105,9 @@ miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -ba
 miRScore has three outputs:
 
 * `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs. Do NOT edit if submitting to miRBase.
+* `reads.csv`: A csv file containing read counts for miR, miR*, and total reads mapped to hairpin in each submitted library.
+* `alt_miRScore_Results.csv`: A csv file containing the results for alternative miRNA suggestions on a failed miRNA hairpin.
+* `alt_reads.csv`: A csv file containing read counts for alternative miR, miR*, and total reads mapped to hairpin in each submitted library
 * `RNAplots`: Directory containing post-script images for each miRNA secondary structure including miR(red)/miR*(green) annotation.
 * `strucVis`: Directory containing post-script images depicting miRNA secondary structure and small RNA read depth for each miRNA locus.
 
@@ -126,13 +129,13 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 * `result` - Pass/Fail result of miRScore for miRNA.  
 * `flags` - Criteria that was not met by the miRNA duplex according to Axtell and Meyers (2018).  
 * `mismatch` - Number of mismatches in miRNA duplex.  
-* `mReads` - Sum of reads in all libraries that mapped to miRNA locus +/- 1 position.  
-* `msReads` - Sum of reads in all libraries that mapped to miRStar locus +/- 1 position.  
-* `totReads` - Total reads mapped to hairpin precursor across all libraries.
-* `numLibraries` - Number of libraries that reads were detected in for that miRNA locus.
-* `precisionScore` - Measure of read precision at miRNA locus. Found by totaling the number of reads for miR and miRStar, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
+* `mReads` - Sum of reads in libraries that mapped to miRNA locus +/- 1 position. If a miRNA passes, mReads will report miR read counts for only the libraries the miRNA passed in. If the miRNA failed, mReads will report the summed miR reads across all submitted libraries.
+* `msReads` - Sum of reads in all libraries that mapped to miRStar locus +/- 1 position. If a miRNA passes, msReads will report miR* read counts for only the libraries the miRNA passed in. If the miRNA failed, msReads will report the summed miR* reads across all submitted libraries.
+* `totReads` - Total reads mapped to hairpin precursor across all libraries. If a miRNA passes, totReads will report total read counts for only the libraries the miRNA passed in. If the miRNA failed, totReads will report the summed total reads across all submitted libraries.
+* `numLibraries` - Number of libraries that reads were report from for mReads, msReads, and totReads.
+* `precisionScore` - Measure of read precision at miRNA locus. Found by totaling the number of reads for miR and miR*, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
 
-In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a read floor of 10 reads within a single library when evaluation all miRNAs, but no longer requires replication. This means that at least 10 combined miR/miR* reads must be detected in a single library in order for a miRNA to 'Pass'. At least one miR and miR* must still be detected within those reads.
+In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a read floor of 10 reads within a single library when evaluation all miRNAs, but no longer requires replication. This means that at least 10 combined miR/miR* reads must be detected in a single library in order for a miRNA to 'Pass'. At least one miR and miR* must still be detected within a library. For example, 9 miR reads and 2 miR* reads in a library will meet this criteria, while 10 miR reads and 0 miR* reads will not.
 
 ### RNAplots
 
