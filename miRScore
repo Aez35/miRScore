@@ -579,13 +579,13 @@ def main():
                 floor=10
                 #If any miRNAs have a library that meets the read floor, check precision and report it failed for precision.
                 if any(num >= floor  for num in totreads):
-                    if float(precision) < 75:
+                    if sum(mircounts)>0 and sum(mirscounts)>0:
                         if "NA" in mirna_dict[x][11]:
                             mirna_dict[x][11]="Precision less than 75%"
                             add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),len(bamfiles),precision])
                         else:
                             mirna_dict[x][11]+=";Precision less than 75%"      
-                            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),len(bamfiles),precision])
+                            add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),len(bamfiles),precision])        
                 #Otherwise, if no libraries had at least 10 reads, report it failed for reads.
                 else:                    
                     if "NA" in mirna_dict[x][11]:
@@ -594,7 +594,6 @@ def main():
                     else:
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mircounts),sum(mirscounts),sum(loci_counts[x]),len(bamfiles),precision])
-                #Otherwise, if the precision is less than 75%, fail the locus
 
     #Add failed miRNAs into dictionary
     for mirfail in failed:
