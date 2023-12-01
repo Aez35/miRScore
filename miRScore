@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#miRScore V1.8.5
+#miRScore V0.86
 
 import RNA
 import re
@@ -597,7 +597,7 @@ def main():
 
     #Add failed miRNAs into dictionary
     for mirfail in failed:
-        if failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!=" sequence detected":
+        if failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!="No hairpin sequence detected":
             seq = str(hp_dict[mirfail].seq)
                 #mature sequence
             mat = str(mir_one[mirfail])
@@ -644,14 +644,15 @@ def main():
 
     for x in mirna_dict:
         if mirna_dict[x][10]=="Fail":
-            mir=str(mirna_dict[x][0])
-            hp=str(mirna_dict[x][8])
-            cmd= "samtools view -F 16 alignments/merged.bam "+x+"| awk -F '\t' '{print $10}' | sort | uniq -c | sort -nr|awk 'length($2) > 19 && length($2) < 25 {print}'| head -n1 | awk '{print $2'}"
-            p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT)
-            output = p.stdout.read()
-            splt = output.decode()
-            if splt != '':
-                alt_mrnas[x]=str(splt.strip())
+            if mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+                    mir=str(mirna_dict[x][0])
+                    hp=str(mirna_dict[x][8])
+                    cmd= "samtools view -F 16 alignments/merged.bam "+x+"| awk -F '\t' '{print $10}' | sort | uniq -c | sort -nr|awk 'length($2) > 19 && length($2) < 25 {print}'| head -n1 | awk '{print $2'}"
+                    p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT)
+                    output = p.stdout.read()
+                    splt = output.decode()
+                    if splt != '':
+                        alt_mrnas[x]=str(splt.strip())
     print("miRNAs predicted from failed miRNAs:")
     print(len(alt_mrnas))
 
