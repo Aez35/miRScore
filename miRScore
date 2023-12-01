@@ -597,7 +597,7 @@ def main():
 
     #Add failed miRNAs into dictionary
     for mirfail in failed:
-        if failed[mirfail]!="No hairpin detected" and failed[mirfail]!="Hairpin structure invalid":
+        if failed[mirfail]!="No hairpin detected" and failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!="No hairpin sequence detected":
             seq = str(hp_dict[mirfail].seq)
                 #mature sequence
             mat = str(mir_one[mirfail])
