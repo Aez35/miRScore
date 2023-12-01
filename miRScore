@@ -597,7 +597,7 @@ def main():
 
     #Add failed miRNAs into dictionary
     for mirfail in failed:
-        if failed[mirfail]!="No hairpin detected" and failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!="No hairpin sequence detected":
+        if failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!=" sequence detected":
             seq = str(hp_dict[mirfail].seq)
                 #mature sequence
             mat = str(mir_one[mirfail])
@@ -839,7 +839,7 @@ def main():
 
 
         for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
-            if mirna_dict[x][11]!="No hairpin detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+            if mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Hairpin structure invalid":
                 #Create strucVis plots for each miRNA
                 if "Fail" in mirna_dict[x][10]:
                     hp_len=str(mirna_dict[x][9])
@@ -854,7 +854,7 @@ def main():
     #Create RNAplots depicting miRNA loci
     os.chdir('RNAplots')
     for x in tqdm.tqdm(mirna_dict,desc="RNAplots",disable=None):
-        if mirna_dict[x][11]!="No hairpin detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+        if mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Hairpin structure invalid":
                 seq = str(mirna_dict[x][8])
                 #mature sequence
                 mstart=int(mirna_dict[x][2])
