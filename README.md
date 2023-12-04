@@ -38,7 +38,7 @@ All dependencies can be install through `conda`. To install and set up `conda`, 
 ### Create Conda environment on Mac/Linux environment
 
 ```
-conda create --name miRScore python viennarna pysam bowtie pandas biopython samtools tqdm
+conda create --name miRScore python viennarna pysam bowtie pandas biopython samtools tqdm strucvis
 ```
 
 
