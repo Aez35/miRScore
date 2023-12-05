@@ -612,7 +612,7 @@ def main():
             add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
         else:
                 if failed[mirfail]=="miR not found in hairpin":
-                        seq= str(hp_dict[mirfail].seq
+                        seq= str(hp_dict[mirfail].seq)
                         mat = str(mir_dict[mirfail].seq)
                         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),"NA","NA","NA","NA","NA","NA",seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
                 else:
