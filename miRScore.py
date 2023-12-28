@@ -62,23 +62,25 @@ if args.fastq is not None:
             msg = (f + " is not a fastq. Please revise input.")
             sys.exit(msg)
 
+
 #Check paths exist
 path="alignments"
 isExist = os.path.exists(path)
 if isExist==True:
-    subprocess.call(["rm","-rf","alignments/"])
-    print("Removed previous alignments folder.")
+    msg = ("alignment folder exists in directory. Please remove before running again.")
+    sys.exit(msg)
 
 path="RNAplots"
 isExist = os.path.exists(path)
 if isExist==True:
-    subprocess.call(["rm","-rf","RNAplots/"])
-    print("Removed previous RNAplots folder.")
+    msg = ("RNAplots folder exists in directory. Please remove before running again.")
+    sys.exit(msg)
 
 path="strucVis"
 isExist = os.path.exists(path)
 if isExist==True:
-    subprocess.call(["rm","-rf","strucVis/"])
+    msg = ("strucvis folder exists in directory. Please remove before running again.")
+    sys.exit(msg)
 
 
 ### ____________________ Functions ______________________ ###
@@ -122,7 +124,6 @@ def get_pairs(dotbracket):
             pairs[bp2] = bp1
     return pairs
  
-
 def score(mir,seq,mirsspos,mirpos,ss):
 #Determine score of candidate miRNA based on criteria outlined in Axtell and Meyers et al 2018.
     reason=[]
@@ -183,7 +184,6 @@ def score(mir,seq,mirsspos,mirpos,ss):
 
     return mscore, reason, criteria
 
-
 def index_of(asym, in_list):
 #Determine asymmetry in mir complex
     try:
@@ -196,7 +196,6 @@ def is_fasta(filename):
     with open(filename, "r") as handle:
         fasta = SeqIO.parse(handle, "fasta")
         return any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
-
 
 def check_fastas(args):
 #Check that hairpin and miRNA files are FASTA files
@@ -252,7 +251,10 @@ def add_values_in_dict(dict, key, list_of_values):
         dict[key] = list()
     dict[key].extend(list_of_values)
     return dict
+
+
 ### _______________________ Code begins __________________________ ###
+
 def main():
     #Create temporary files converting any U's to T's
     #hairpins
@@ -271,6 +273,7 @@ def main():
     mirna_dict={}
     failed={}
 
+##____________________Checking flags ______________________##
     #Checks length of hairpin and if the miRNA multimaps to it. 
     #If multimapping is detect, miRNA is removed and added to failed dictionary
     #Check that each miRNA contains only A, T, G, C. If not, add to failed or quit.
@@ -294,26 +297,29 @@ def main():
             failed[mir] = "No hairpin sequence detected"
 
 
+    #If any miRNAs failed for these reasons, quit miRScore.
+    if len(failed) != 0:
+        for fail in failed:
+            print(fail+" failed due to: "+failed[fail])
+        sys.exit("Please ammend and rerun miRScore.")
+
+
     #Score miRNA criteria for hairpin length, mismatches, and bulges
     for x in tqdm.tqdm(mir_one, desc="Scoring miRNAs",disable=None):
         hp=str(hp_dict[x].seq)
         mir=str(mir_one[x])
         
         if mir in hp:
-            # Allow 1-2 positional variance in miRNA position
             mstart=hp.index(mir)
             mstop=(hp.index(mir)+len(mir))
             
             (ss, mfe)=RNA.fold(hp)
-
             mir_ss=ss[mstart:mstop]
-
             if mstart == 0:
-                mirspos=get_s_rels(mstart+1,mstop+1,ss)
+                sys.exit("Error! " +x + " miRNA start position is the first nucleotide of the hairpin precursor. Cannot determine miRStar as miRNA structure requires a 2 nt 3' overhang. Please ammend or remove and rerun miRScore.")
             else:
                 mirspos=get_s_rels(mstart,mstop,ss)
 
-            mstart=mstart+1
             if mirspos[0] == None:
                 failed[x]="Hairpin structure invalid"
             else:
@@ -323,17 +329,20 @@ def main():
                 if mirsspos[0] > mirsspos[1]:
                     flag=["Hairpin structure invalid"]
                     sep = ";"
+                    mstart=mstart+1
                     add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",(mirsspos[0]+1),mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),"NA","NA","NA","NA","NA","NA","NA"])
                 #If the length of miRstar is greater than 25, mirstar fails.
                 elif (mirsspos[1]-mirsspos[0])>(25):
                     flag=["Hairpin structure invalid"]
                     sep = ";"
+                    mstart=mstart+1
                     add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,"NA","NA",(mirsspos[0]+1),mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),"NA","NA","NA","NA","NA","NA","NA"])
                 else:
                     mirstar=hp[mirsspos[0]:mirsspos[1]]
                     mirpos=[mstart,mstop]
                     result = score(mir,hp,mirsspos,mirpos,ss)        
                     mirstar=hp[mirsspos[0]:mirsspos[1]]
+                    mstart=mstart+1
 
                     #Add result from score function to mirna dict
                     sep = ";"
@@ -350,11 +359,11 @@ def main():
                     else:
                         add_values_in_dict(mirna_dict,x,[mir.translate(str.maketrans("tT", "uU")),len(mir_one[x]),mstart,mstop,str(mirstar.translate(str.maketrans("tT", "uU"))),len(mirstar),(mirsspos[0]+1),mirsspos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",sep.join(flag),result[2][2],result[2][3]])
         else:
-            failed[x]="miR not found in hairpin"
+            print("Error! "+ x + ": miRNA sequence not found in hairpin sequence. Please ammend and rerun miRScore.")
 
     #Stop program if all miRNAs failed previous check
     if len(mirna_dict)<1:
-        sys.exit("Error: no candidate miRNAs left to score.")
+        sys.exit("Error! No candidate miRNAs left to score.")
 
 
 ## BEGIN READ CHECK ##
@@ -443,10 +452,8 @@ def main():
                     mirstart_indx=mirna_dict[x][6]-1
                     mirstop_indx=mirna_dict[x][7]+1
                 else:
-                    mstart_indx=mirna_dict[x][2]
-                    mstop_indx=mirna_dict[x][3]+1
-                    mirstart_indx=mirna_dict[x][6]
-                    mirstop_indx=mirna_dict[x][7]+1
+                    print("Error! " + x +" miRNA starts at first position of hairpin precursor. Please ammend and rerun.")
+                    sys.exit()
 
                 add_values_in_dict(mirna_counts,x,[str(Path(bam).stem)])
 
