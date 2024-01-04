@@ -867,7 +867,7 @@ def main():
     #Create RNAplots depicting miRNA loci
     os.chdir('RNAplots')
     for x in tqdm.tqdm(mirna_dict,desc="RNAplots",disable=None):
-        if failed[mirfail]!="Hairpin structure invalid" and failed[mirfail]!="No hairpin sequence detected" and failed[mirfail]!="Sequence contained characters besides U,A, T, G, or C" and failed[mirfail]!="miR not found in hairpin":
+        if mirna_dict[x][11]!="Hairpin structure invalid" and mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Sequence contained characters besides U,A, T, G, or C" and mirna_dict[x][11]!="miR not found in hairpin":
                 seq = str(mirna_dict[x][8])
                 #mature sequence
                 mstart=int(mirna_dict[x][2])
