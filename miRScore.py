@@ -22,7 +22,7 @@ import numpy as np
 startTime = time.time()
 
 #Check required packages
-print("Checking required packages...")
+print("Checking required modules...")
 req_packs=["bowtie","samtools","RNAfold"]
 for pack in req_packs:
         path = shutil.which(pack)
