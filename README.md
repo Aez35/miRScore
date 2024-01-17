@@ -44,19 +44,19 @@ conda create --name miRScore python viennarna pysam bowtie pandas biopython samt
 
 ## miRScore installation
 
-miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore.
+miRScore is run through the python script `miRScore.py`. To install miRScore, download the file `miRScore.py` from github page https://github.com/Aez35/miRScore.
 
 miRScore can be made executable by doing the following:
 
-Place the `miRScore` script in your conda environment. To locate this loaction, use the following command:
+Place the `miRScore.py` script in your conda environment. To locate this loaction, use the following command:
 ```
 conda info --envs
 ```
 
-Make `miRScore` executable and place in the bin directory of your miRScore conda environment:
+Make `miRScore.py` executable and place in the bin directory of your miRScore conda environment:
 ```
-chmod +x miRScore
-mv miRScore /Users/zvaricka/miniconda3/envs/miRScore/bin
+chmod +x miRScore.py
+mv miRScore.py /Users/zvaricka/miniconda3/envs/miRScore/bin
 ```
 
 ## Required
@@ -107,9 +107,9 @@ For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs dow
 ```
 mkdir bamfiles
 cd bamfiles
-wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222445_trimmedSingle.bam
-wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222444_trimmedSingle.bam
-wget http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222443_trimmedSingle.bam
+wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222445_trimmedSingle.bam
+wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222444_trimmedSingle.bam
+wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222443_trimmedSingle.bam
 cd ..
 ```
 3. Run miRScore
