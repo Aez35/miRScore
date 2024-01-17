@@ -118,7 +118,7 @@ miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -ba
 ```
 
 # Output
-miRScore has three outputs:
+miRScore has six outputs:
 
 * `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs. Do NOT edit if submitting to miRBase.
 * `reads.csv`: A csv file containing read counts for miR, miR*, and total reads mapped to hairpin in each submitted library.
