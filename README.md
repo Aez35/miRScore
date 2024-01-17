@@ -65,10 +65,9 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 * `-mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `(-fastq fastqfiles | -bamfile bamfiles)`: Small RNA-seq libraries, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
+* `(-fastq fastqfiles | -bamfile bamfiles)`: Small RNA-seq libraries or mapped reads, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
 
-**Please note that the sequence identifier of each miRNA must match the sequence identifier of the corresponding hairpin precursors.**
-
+**Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-miR173)! This is not case sensitive.**
 
 ## Usage
 ```
