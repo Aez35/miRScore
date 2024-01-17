@@ -71,7 +71,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 ## Usage
 ```
-miRScore [-help] ([-fastq FASTQFILES]|[-bamfile BAMFILES]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm] [-n NAME] [-threads THREADS]
+miRScore.py [-help] ([-fastq FASTQFILES]|[-bamfile BAMFILES]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm] [-n NAME] [-threads THREADS]
 ```
 
 ## Options
