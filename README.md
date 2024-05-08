@@ -2,7 +2,7 @@
 
 # Description
 
-miRScore is a miRNA validation tool developed to analyze novel plant miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether plant miRNA loci are of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA, precursor sequences, and sRNA-seq data to miRScore. miRScore will then score each miRNA locus and output several files analyzing the submitted loci. The primary results can be found in the results.csv file, which contains positional and read information, as well as a pass/fail result for each miRNA locus.
+miRScore is a miRNA validation tool developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether miRNA loci are of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA, precursor sequences, and sRNA-seq data to miRScore. miRScore will then score each miRNA locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each miRNA locus.
 
 ### **Determining what is a 'miRNA'**
 
@@ -14,10 +14,10 @@ What constitutes a plant miRNA is based on several structural and quantitative c
 |There must not be more than 3 nucleotides in asymmetric bulges          |
 |2 nucleotide 3' overhang of miRNA duplex                                |
 |No secondary stems or large loops in miRNA duplex                       |
-|miRNA precursor sequence must be less than 300 nucleotides              |
-|miRNA must be between 20 to 24 nucleotides                              |
-|Confirmation of the miRNA and miRNA* by sRNA-seq only                   |
-|At least 75% of reads that map to precursor must come from miRNA duplex |
+|Hairpin sequence should be less than 200(animals)/300(plants) nts       |
+|miRNA must be between 20-24 nucleotides for plants or 19-25 for animals |
+|Confirmation of the miRNA and miRNA* by small RNA-sequencing            |
+|At least 75% of reads that map to hairpin must come from miRNA duplex   |
 
 miRScore scores miRNAs based on these conditions, but with some leniency for certain criteria. These exceptions include *miRNAs between 23/24 nt and those with precursors greater than 300 nt*. Instead of treating these as a failed locus, miRScore will report a flag (see flags section for details) indicating that miRNA locus contains one or both of these characteristics. If all other criteria is met, that locus will pass. In addition to these leniencies, miRScore utilizes a read floor instead of requiring multiple libraries have sufficient reads of a miRNA locus. This means that if at least 10 reads map to the miRNA locus in at least one library, that miRNA will have met the criteria. If all other criteria are met, that miRNA will pass.
 
@@ -53,7 +53,7 @@ Place the `miRScore.py` script in your conda environment. To locate this loactio
 conda info --envs
 ```
 
-Make `miRScore.py` executable and place in the bin directory of your miRScore conda environment:
+You may make `miRScore.py` executable and place in the bin directory of your miRScore conda environment:
 ```
 chmod +x miRScore.py
 mv miRScore.py /Users/zvaricka/miniconda3/envs/miRScore/bin
@@ -63,15 +63,15 @@ mv miRScore.py /Users/zvaricka/miniconda3/envs/miRScore/bin
 
 miRScore requires two FASTA files and multiple small RNA-seq libraries in order to run.   
 
-* `-mirnas mirnafile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
-* `-precursors precursorfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
+* `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
+* `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
 * `(-fastq fastqfiles | -bamfile bamfiles)`: Small RNA-seq libraries or mapped reads, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
 
 **Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-miR173)! This is not case sensitive.**
 
 ## Usage
 ```
-miRScore.py [-help] ([-fastq FASTQFILES]|[-bamfile BAMFILES]) -mirnas MIRNAFILE -precursors PRECURSORFILE [-mm] [-n NAME] [-threads THREADS]
+miRScore.py [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS]
 ```
 
 ## Options
@@ -79,13 +79,16 @@ miRScore.py [-help] ([-fastq FASTQFILES]|[-bamfile BAMFILES]) -mirnas MIRNAFILE 
 |Option     |Description                                                  |
 |:---------:|:-----------------------------------------------------------:|
 |help       | prints help message                                         |
-|mirnas     | FASTA file containing mature sequences of novel miRNAs      |
-|precursors | FASTA file containing hairpin precursor sequences of mirnas |
+|mature     | FASTA file containing mature sequences of novel miRNAs      |
+|star       | FASTA file containing star sequences of novel miRNAs        |
+|hairpin    | FASTA file containing hairpin precursor sequences of mirnas |
 |fastq      | List of small RNA-seq libraries in FASTQ format             |
 |bam        | List of small RNA-seq libraries in bam format               |
 |mm         | Allow up to 1 mismatch in miRNA reads                       |
 |n          | Specify a name to be added at the beginning of output files |
 |threads    | Specify number of threads to use during bam2fastq step      |
+|kingdom    | Specify either 'plant' or 'animal'                          |
+
 
 ### Bowtie
 Bowtie has been configured to run the following options.
@@ -114,7 +117,7 @@ cd ..
 ```
 3. Run miRScore
 ```
-miRScore -mirnas ath_miRBase_miRNAs.fa -precursors ath_miRBase_precursors.fa -bamfile bamfiles/*
+miRScore.py -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -bamfile bamfiles/* -kingdom plant
 ```
 
 # Output
@@ -157,23 +160,27 @@ In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a re
 Flags are reported to help the user determine what criteria a miRNA locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a miRNA locus to fail, and instead are reported to indicate to the user that the miRNA or the miRNA precursor have longer lengths and should be evaluted carefully.
 
 #### List of potential flags
-* `Hairpin structure invalid` - The miRNA hairpin secondary structure does not allow for the indexing of the miR duplex. This may be due to a large bulge or the miRNA is found too close to the start of the hairpin, not allowing for a 2nt 3' overhang of the miR*.
-* `More than 5 mismatches` - More than 5 nucleotides are mismatched between the miR and miR*.
-* `23/24 nt miRNA` - The miR/MIR* is 23 or 24 nucleotides in length.
+* `hairpin structure invalid` - The miRNA hairpin secondary structure does not allow for the indexing of the miR duplex. This may be due to a large bulge or the miRNA is found too close to the start of the hairpin, not allowing for a 2nt 3' overhang of the miR*.
+* `mature structure invalid` - The mature miRNA is likely within a terminal loop structure. This causes the mature miRNA to fold back on itself and fail to meet the criteria.
+* `More than 5 mismatches` - More than 5 nucleotides are mismatched between the miRNA and miRNA* sequences.
+* `23/24 nt miRNA` - The miRNA/miRNA* is 23 or 24 nucleotides in length.
+* `Sequence contained characters besides U,A, T, G, or C` - One of the user-provided sequences contained letters besides A, T, G, C, or U.
 * `asymmetric bulge greater than 3` - There is an asymmetric bulge greater than 3 nucleotides in the miR duplex.
-* `miR structure invalid` - The miRNA pairs to itself, indicating that the secondary structure contains a loop in that position.  
-* `miR not found in hairpin` -The miRNA was not detected in the precursor sequence provided by the user.
-* `No miR duplex reads detected` -Reads were not detected in the libraries provided for either the miR, miR*, or both.
+* `miRNA not found in hairpin sequence` -The miRNA was not detected in the precursor sequence provided by the user.
+* `hairpin is less than 50 basepairs` - The user-provided hairpin sequence is less than 50 basepairs.
+* `miRNA multimaps to hairpin` - The miRNA or miRNA* provided by the user multimaps to hairpin sequence.
+* `No miR duplex reads detected` - Reads were not detected in the libraries provided for either the miR, miR*, or both.
 * `Less than 10 reads` - The miRNA locus had less than 10 combined miR/miR* reads in a single library. The miRNA does not meet the read floor.
 * `Precision less than 75%` - The precision (miR* reads + miR* reads / total reads mapped to hairpin) did not meet the required 75% in a single library.
 * `No hairpin detected` -The hairpin of the miRNA could not be found in the precursor file provided by the user.
-* `Precursor > 300 nt` - The user provided miRNA precursor has a length greater than 300 nucleotides.
+* `precursor > 200/300 nt` - The user provided miRNA precursor has a length greater than 200/300 nucleotides.
+* `No 2nt 3' overhang` - The user-provided star sequence did not meet the criteria for a 2nt overhang on the 3' end of the miRNA duplex.
 * `NA` - The miRNA meets all miRScore criteria.
 
 ## reads.csv
 A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result. A 'Pass' indicates the miRNA meets the read floor and has a precision greater than 75% in that library. A 'Fail' indcates one of these criteria are not met.
 
-## alt_miRScore_Results.csv
+## alt_mirna_results.csv
 When a miRNA 'fails' miRScore, meaning one or more of the criteria are not met, that locus will be reavaluated based on sequencing data. This revaluation is done using the reads mapped to the hairpin associated with the failed miRNA. miRScore will use samtools to select the most abundant read in the alignments/merged.bam file with a sequence between 20-24 nt that mapped to the failed miRNA hairpin. miRScore will then score that sequence as an alternative miRNA. Any of these alternative miRNAs that pass will be reported in alt_miRScore_Results.csv. These alternative miRNAs are not intended to be final confirmation of a miRNA locus, and should be evaluated with care.
 ## alt_reads.csv
 A csv file containing the reads reported in each library of the alternative miRNA, alternative miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result. A 'Pass' indicates the alternative miRNA meets the read floor and has a precision greater than 75% in that library. A 'Fail' indcates one of these criteria are not met.
@@ -183,7 +190,7 @@ A csv file containing the reads reported in each library of the alternative miRN
 Directory containing .ps files of miRNA secondary structure. This structure is predicted using Vienna RNAfold. For more information on RNA predicted structures, please visit [ViennaRNA page](https://www.tbi.univie.ac.at/RNA/index.html).
 
 Each file contains the hairpin sequence for a miRNA, as well as annotation for the miRNA and predicted miRNA* sequences. The miRNA is outlined in red, while the miRNA* is outlined in green.  
-<img width="623" alt="image" src="https://user-images.githubusercontent.com/88506527/230966219-33cc6f62-a1dc-46fe-8541-176ef43cca88.png">
+<img width="344" alt="image" src="https://github.com/Aez35/miRScore/assets/88506527/a9b8fa80-084c-4716-b4a4-11189d34bbf5">
 
 ## strucvis_plots
 
