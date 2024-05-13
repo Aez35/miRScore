@@ -404,7 +404,7 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
                                                           str(mirstar.translate(str.maketrans("tT", "uU"))),
                                                           len(mirstar), (mirsspos[0] + 1), mirsspos[1],
                                                           hp.translate(str.maketrans("tT", "uU")), len(hp),
-                                                          "Pass", sep.join(flag), result[2][2], result[2][3]])
+                                                          "Pass", sep.join(flag), result[2][3], result[2][4]])
     return pred_dict
 ### _______________________ Code begins __________________________ ###
 def main():
@@ -577,12 +577,12 @@ def main():
                     if mir_ss.count("(") != 0 and mir_ss.count(")") !=0:
                         flag=["mature stucture invalid"]
                         y.append(x)
-                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),result[2][2],result[2][3]])
+                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),result[2][3],result[2][4]])
                     elif sum(result[0]) < 81:
                         y.append(x)
-                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),result[2][2],result[2][3]])
+                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Fail",sep.join(flag),result[2][3],result[2][4]])
                     else:
-                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",sep.join(flag),result[2][2],result[2][3]])
+                        add_values_in_dict(mirna_dict,x,[mature.translate(str.maketrans("tT", "uU")),len(initial[x]),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]+1),starpos[1],hp.translate(str.maketrans("tT", "uU")),len(hp),"Pass",sep.join(flag),result[2][3],result[2][4]])
     #Stop program if all miRNAs failed previous check
     if len(mirna_dict)<1:
         sys.exit("Error! No candidate miRNAs left to score.")
