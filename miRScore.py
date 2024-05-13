@@ -704,7 +704,7 @@ def main():
         if sum(mir_reads)==0 or sum(mirstar_reads)==0:
             mirna_dict[x][10]="Fail"
             if "NA" in mirna_dict[x][11]:
-                mirna_dict[x][11]="No mature or tar reads detected"
+                mirna_dict[x][11]="No mature or star reads detected"
                 if sum(all_reads) != 0:
                     precision="{:.2f}".format((100*(sum(mir_reads)+sum(mirstar_reads))/sum(all_reads)))
                     add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
