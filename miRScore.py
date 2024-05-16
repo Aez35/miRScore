@@ -775,11 +775,10 @@ def main():
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
-    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','mature miRNA not found in hairpin sequence','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
+    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','miRNA not found in hairpin sequence','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
     #Add failed miRNAs into dictionary
     for mirfail in failed:
         if failed[mirfail] not in fails:
-            print(mirfail)
             seq = str(hp_dict[mirfail].seq)
                 #mature sequence
             mat = str(mature_dict[mirfail])
@@ -1041,4 +1040,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
