@@ -610,7 +610,7 @@ def main():
         fastqs = []
         for file in bams2convert:
             cmd = ["samtools", "bam2fq"] + threads_option + [file, '>', f'ms_fastqs/{Path(file).stem}.fastq']
-            run(" ".join(cmd), shell=True)
+            run(" ".join(cmd))
             fastqs.append(f"ms_fastqs/{Path(file).stem}.fastq")
         subprocess.call(["mkdir", "alignments"])
         align_fastqs(args, fastqs)
