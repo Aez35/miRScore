@@ -19,7 +19,7 @@ What constitutes a plant miRNA is based on several structural and quantitative c
 |Confirmation of the miRNA and miRNA* by small RNA-sequencing            |
 |At least 75% of reads that map to hairpin must come from miRNA duplex   |
 
-miRScore scores miRNAs based on these conditions, but with some leniency for certain criteria. These exceptions include *miRNAs between 23/24 nt and those with precursors greater than 300 nt*. Instead of treating these as a failed locus, miRScore will report a flag (see flags section for details) indicating that miRNA locus contains one or both of these characteristics. If all other criteria is met, that locus will pass. In addition to these leniencies, miRScore utilizes a read floor instead of requiring multiple libraries have sufficient reads of a miRNA locus. This means that if at least 10 reads map to the miRNA locus in at least one library, that miRNA will have met the criteria. If all other criteria are met, that miRNA will pass.
+miRScore scores miRNAs based on these conditions, but with some leniency for certain criteria. These exceptions include *miRNAs between 23/24 nt and those with precursors greater than 300 nt*. Instead of treating these as a failed locus, miRScore will report a flag (see flags section for details) indicating that miRNA locus contains one or both of these characteristics. If all other criteria are met, that locus will pass. In addition to these leniencies, miRScore utilizes a read floor instead of requiring multiple libraries have sufficient reads of a miRNA locus. This means that if at least 10 reads map to the miRNA locus in at least one library, that miRNA will have met the criteria. If all other criteria are met, that miRNA will pass.
 
 # Installation
 
@@ -65,13 +65,13 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 * `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `(-fastq fastqfiles | -bamfile bamfiles)`: Small RNA-seq libraries or mapped reads, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible.
+* `(-fastq fastqfiles | -bamfile bamfiles)`: Trimmed small RNA-seq libraries or mapped reads, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible. Please be sure to trim FASTQ files before submitting to miRScore.
 
 **Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-miR173)! This is not case sensitive.**
 
 ## Usage
 ```
-miRScore.py [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS]
+miRScore.py [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= mirscore_output/]
 ```
 
 ## Options
@@ -88,6 +88,7 @@ miRScore.py [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -matu
 |n          | Specify a name to be added at the beginning of output files |
 |threads    | Specify number of threads to use during bam2fastq step      |
 |kingdom    | Specify either 'plant' or 'animal'                          |
+|out        | Specify output directory. Defailts to 'mirscore_output/'    |
 
 
 ### Bowtie
@@ -157,7 +158,7 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a read floor of 10 reads within a single library when evaluation all miRNAs, but no longer requires replication. This means that at least 10 combined miR/miR* reads must be detected in a single library in order for a miRNA to 'Pass'. At least one miR and miR* must still be detected within a library. For example, 9 miR reads and 2 miR* reads in a library will meet this criteria, while 10 miR reads and 0 miR* reads will not.
 
 ### **Flags**
-Flags are reported to help the user determine what criteria a miRNA locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a miRNA locus to fail, and instead are reported to indicate to the user that the miRNA or the miRNA precursor have longer lengths and should be evaluted carefully.
+Flags are reported to help the user determine what criteria a MIRNA locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a MIRNA locus to fail, and instead are reported to indicate to the user that the miRNA or the miRNA precursor have longer lengths and should be evaluted carefully.
 
 #### List of potential flags
 * `hairpin structure invalid` - The miRNA hairpin secondary structure does not allow for the indexing of the miR duplex. This may be due to a large bulge or the miRNA is found too close to the start of the hairpin, not allowing for a 2nt 3' overhang of the miR*.
