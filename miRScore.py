@@ -39,6 +39,7 @@ ap.add_argument("-nostrucvis", help="Do not include StrucVis output",  nargs='?'
 ap.add_argument("-threads", help="Specify number of threads for bam2fq")
 ap.add_argument("-kingdom", required=True,choices=["plant","animal"],help="Specify animal or plant")
 ap.add_argument("-star", help="fasta file of mirna* sequence")
+ap.add_argument("-out", help="output directory",default="mirscore_output")
 args = ap.parse_args()
 
 
@@ -61,6 +62,7 @@ if args.bamfile is not None:
     print("     'Bamfiles' " +str(args.bamfile))
 if args.fastq is not None:
     print("     'Fastqs' " +str(args.fastq))
+print("     'Output directory' "+ args.out+"/")
 print("--------")
 
 #Check format of files.
@@ -78,22 +80,17 @@ if args.fastq is not None:
             msg = (f + " is not a fastq. Please revise input.")
             sys.exit(msg)
 
+if args.fastq or args.bamfile:
+    print("Small RNA-seq libraries found.")
+else:
+    msg="Small-RNA libraries required. Please provide libraries."
+    sys.exit(msg)
 
 #Check paths exist
-path="alignments"
+path=args.out
 isExist = os.path.exists(path)
 if isExist==True:
-    msg = ("alignment folder exists in directory. Please remove before running again.")
-    sys.exit(msg)
-path="RNAplots"
-isExist = os.path.exists(path)
-if isExist==True:
-    msg = ("RNAplots folder exists in directory. Please remove before running again.")
-    sys.exit(msg)
-path="strucVis"
-isExist = os.path.exists(path)
-if isExist==True:
-    msg = ("strucvis folder exists in directory. Please remove before running again.")
+    msg = ("Output directory '" + args.out + "/' already exists. Please assign a new output directory using option '-out'.")
     sys.exit(msg)
 
 DEVNULL = open(os.devnull, 'w')
@@ -113,7 +110,7 @@ def add_values_in_dict(dict, key, list_of_values):
 def process_mirnas(input_file, output_file):
 # Execute the shell command using subprocess
     subprocess.run(
-        f"cat {input_file} | tr '[:lower:]' '[:upper:]' | sed -E '/(>)/!s/U/T/g' > {output_file}",
+        f"cat ../{input_file} | sed -E '/(>)/!s/U/T/g' > {output_file}",
         shell=True
     )
 
@@ -408,6 +405,9 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
     return pred_dict
 ### _______________________ Code begins __________________________ ###
 def main():
+    #Create output directory
+    subprocess.call(["mkdir",args.out])
+    os.chdir(args.out)
     #Create temporary files converting any U's to T's
     #hairpins
     process_mirnas(args.hairpin, "tmp.hairpin.fa")
@@ -436,16 +436,20 @@ def main():
     print('')
     print("Checking hairpin and miRNA sequences...")
     for mir in mature_dict:
-        mature=str(mature_dict[mir].seq)
+        normalized_hpdict = {key.lower(): key for key in hp_dict.keys()}
+        normalized_key = mir.lower()
+        original_key = normalized_hpdict[normalized_key]
+
+        mature=str(mature_dict[mir].seq).upper()
         if args.star != None:
             #print("Finding star in dictionary")
             if mir in star_dict:
-                star=str(star_dict[mir].seq)
+                star=str(star_dict[mir].seq).upper()
                 #print(star)
             else:
                 sys.exit( "Error! " + mir + " not found in star file.")
-        if mir in hp_dict:
-            hp=str(hp_dict[mir].seq)
+        if normalized_key in normalized_hpdict:
+            hp=str(hp_dict[original_key].seq).upper()
         else:
             sys.exit( "Error! " + mir + " not found in hairpin file.")
         
@@ -462,34 +466,38 @@ def main():
         if args.star is not None:
             #Check hairpin length and if mature or star multimaps to hairpin
             if mature not in hp:
-                failed[mir] = "miRNA not found in hairpin sequence"
+                failed[original_key] = "miRNA not found in hairpin sequence"
             if star not in hp:
-                failed=[mir]='miRNA not found in hairpin sequence'
+                failed=[original_key]='miRNA not found in hairpin sequence'
             elif len(hp) < 50:
-                failed[mir] = "Hairpin is less than 50 basepairs" 
+                failed[original_key] = "Hairpin is less than 50 basepairs" 
             elif hp.count(mature) > 1:
-                failed[mir] = "miRNA multimaps to hairpin" 
+                failed[original_key] = "miRNA multimaps to hairpin" 
             elif hp.count(star)>1:
-                failed[mir] = "miRNA multimaps to hairpin" 
+                failed[original_key] = "miRNA multimaps to hairpin" 
             else:
-                initial[mir]=str(mature_dict[mir].seq)
+                initial[original_key]=str(mature_dict[mir].seq).upper()
         else:
             #Check hairpin length and if mature or star multimaps to hairpin
             if mature not in hp:
-                failed[mir] = "miRNA not found in hairpin sequence"
+                failed[original_key] = "miRNA not found in hairpin sequence"
             elif len(hp) < 50:
-                failed[mir] = "Hairpin is less than 50 basepairs" 
+                failed[original_key] = "Hairpin is less than 50 basepairs" 
             elif hp.count(mature) > 1:
-                failed[mir] = "miRNA multimaps to hairpin" 
+                failed[original_key] = "miRNA multimaps to hairpin" 
             else:
-                initial[mir]=str(mature_dict[mir].seq)        
+                initial[original_key]=str(mature_dict[mir].seq).upper()        
     print('miRNAs failed: ' + str(len(failed.values())))
 
     for x in tqdm.tqdm(initial, desc="Scoring miRNAs",disable=None):
-        mature=str(mature_dict[x].seq)
+        normalized_maturedict = {key.lower(): key for key in mature_dict.keys()}
+        normalized_key = x.lower()
+        original_key = normalized_maturedict[normalized_key]
+
+        mature=str(mature_dict[original_key].seq).upper()
         if args.star != None:
-            star=str(star_dict[x].seq)
-        hp=str(hp_dict[x].seq)
+            star=str(star_dict[original_key].seq).upper()
+        hp=str(hp_dict[x].seq).upper()
 
         maturestarti=hp.index(mature)
         maturestop=(maturestarti+len(mature))
@@ -594,7 +602,7 @@ def main():
     #If argument -fastq used, map FASTQ to hairpins directly
     if args.fastq is not None:
         #Create a list of all fastq files in provided directory.
-        fastqs=list(args.fastq)
+        fastqs = ['../' + item for item in args.fastq]
         print("Number of Fastq files detected:" + str(len(fastqs)))
         #Make output directory.
         subprocess.call(["mkdir","alignments"])
@@ -694,7 +702,7 @@ def main():
     df2.to_csv(filename, sep=',', encoding='utf-8', index_label='miRNA')
 
     #Determine if miRNA and miRStar are found in multiple libraries. Precision is calculated individually, library by library.
-    for x in tqdm.tqdm(mirna_counts, desc="Counting miRNAs", disable=None):
+    for x in mirna_counts:
         mirstar_reads = list(map(int, mirna_counts[x][2::5]))
         mir_reads = list(map(int, mirna_counts[x][1::5]))
         all_reads = list(map(int, mirna_counts[x][3::5]))
@@ -777,11 +785,15 @@ def main():
 
     fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','miRNA not found in hairpin sequence','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
     #Add failed miRNAs into dictionary
+    normalized_maturedict = {key.lower(): key for key in mature_dict.keys()}
+
     for mirfail in failed:
+        normalized_key = mirfail.lower()
+        original_key = normalized_maturedict[normalized_key]
         if failed[mirfail] not in fails:
-            seq = str(hp_dict[mirfail].seq)
+            seq = str(hp_dict[mirfail].seq).upper()
                 #mature sequence
-            mat = str(mature_dict[mirfail])
+            mat = str(mature_dict[original_key].seq).upper()
             mstart=seq.index(mat)
             mstop=(seq.index(mat)+len(mat))
 
@@ -793,11 +805,11 @@ def main():
             add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
         else:
                 if failed[mirfail]=="mature miRNA not found in hairpin sequence":
-                        seq= str(hp_dict[mirfail].seq)
-                        mat = str(mature_dict[mirfail].seq)
+                        seq= str(hp_dict[mirfail].seq).upper()
+                        mat = str(mature_dict[original_key].seq).upper()
                         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),"NA","NA","NA","NA","NA","NA",seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
                 else:
-                        mat = str(mature_dict[mirfail].seq)
+                        mat = str(mature_dict[original_key].seq).upper()
                         add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),"NA","NA","NA","NA","NA","NA","NA","NA","Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA","NA","NA"])
     DEVNULL = open(os.devnull, 'w')
 
@@ -1002,7 +1014,7 @@ def main():
         cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
         run(cmd)
 
-#Remove unecessary files
+#Remove unecessary files and move to output directory
     cmd="rm -rf RNAplots/passed/*_ss.ps*"
     run(cmd)
     cmd="rm -rf RNAplots/failed/*_ss.ps*"
@@ -1021,12 +1033,12 @@ def main():
     print("____________________________________")
     if args.n != None:
         print("Results file:" + args.n + "_miRScore_results")
-    print("Number of submitted candidate miRNAs: " + str(len(mature_dict)))
+    print("Number of submitted candidate MIRNA loci: " + str(len(mature_dict)))
     res_pass = 0
     for key in mirna_dict:
         if mirna_dict[key][10] == "Pass":
             res_pass = res_pass + 1
-    print("Total number of miRNAs identified with high confidence: " + str(res_pass) )
+    print("Total number of MIRNA loci validated to meet all criteria: " + str(res_pass) )
     res_fail = 0
     for key in mirna_dict:
         if mirna_dict[key][10] == "Fail":
@@ -1034,11 +1046,10 @@ def main():
     print("Total number of Failed miRNAs: " + str(res_fail))
     print('')
     executionTime = (time.time() - startTime)
-    print('Time to run: ' + str(executionTime))
+    print('Time to run: ' + str(int(executionTime)) + " seconds")
     print('Run Completed!')
 
 
 if __name__ == "__main__":
     main()
-
 
