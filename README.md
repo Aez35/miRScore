@@ -44,19 +44,19 @@ conda create --name miRScore python viennarna pysam bowtie pandas biopython samt
 
 ## miRScore installation
 
-miRScore is run through the python script `miRScore.py`. To install miRScore, download the file `miRScore.py` from github page https://github.com/Aez35/miRScore.
+miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore.
 
 miRScore can be made executable by doing the following:
 
-Place the `miRScore.py` script in your conda environment. To locate this loaction, use the following command:
+Place the `miRScore` script in your conda environment. To locate this loaction, use the following command:
 ```
 conda info --envs
 ```
 
-You may make `miRScore.py` executable and place in the bin directory of your miRScore conda environment:
+You may make `miRScore` executable and place in the bin directory of your miRScore conda environment:
 ```
-chmod +x miRScore.py
-mv miRScore.py /Users/zvaricka/miniconda3/envs/miRScore/bin
+chmod +x miRScore
+mv miRScore /Users/zvaricka/miniconda3/envs/miRScore/bin
 ```
 
 ## Required
@@ -71,7 +71,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 ## Usage
 ```
-miRScore.py [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= mirscore_output/]
+miRScore [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
@@ -118,7 +118,7 @@ cd ..
 ```
 3. Run miRScore
 ```
-miRScore.py -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -bamfile bamfiles/* -kingdom plant
+miRScore -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -bamfile bamfiles/* -kingdom plant
 ```
 
 # Output
