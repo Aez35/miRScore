@@ -39,11 +39,12 @@ ap.add_argument("-nostrucvis", help="Do not include StrucVis output",  nargs='?'
 ap.add_argument("-threads", help="Specify number of threads for bam2fq")
 ap.add_argument("-kingdom", required=True,choices=["plant","animal"],help="Specify animal or plant")
 ap.add_argument("-star", help="fasta file of mirna* sequence")
-ap.add_argument("-out", help="output directory",default="mirscore_output")
+ap.add_argument("-out", help="output directory",default="miRScore_output")
 args = ap.parse_args()
 
 
 print("--------")
+print("miRScore version 0.9")
 print("Options:")
 print("     'Mature file' " + args.mature)
 if args.star is not None:
@@ -668,7 +669,7 @@ def main():
                     mirstart_indx=mirna_dict[x][6]-1
                     mirstop_indx=mirna_dict[x][7]+1
                 else:
-                    print("Error! " + x +" miRNA starts at first position of hairpin precursor. Please ammend and rerun.")
+                    print("Error! " + x +" mature or star sequence starts at first position of hairpin precursor. Please extend the precursor and rerun miRScore.")
                     sys.exit()
 
                 add_values_in_dict(mirna_counts,x,[str(Path(bam).stem)])
