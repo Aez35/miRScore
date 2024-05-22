@@ -438,7 +438,10 @@ def main():
     for mir in mature_dict:
         normalized_hpdict = {key.lower(): key for key in hp_dict.keys()}
         normalized_key = mir.lower()
-        original_key = normalized_hpdict[normalized_key]
+        if normalized_key in normalized_hpdict:
+            original_key = normalized_hpdict[normalized_key]
+        else:
+            sys.exit( "Error! " + mir + " not found in hairpin file! Please ammend and rerun miRScore.")
 
         mature=str(mature_dict[mir].seq).upper()
         if args.star != None:
