@@ -88,7 +88,7 @@ miRScore [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature 
 |n          | Specify a name to be added at the beginning of output files |
 |threads    | Specify number of threads to use during bam2fastq step      |
 |kingdom    | Specify either 'plant' or 'animal'                          |
-|out        | Specify output directory. Defailts to 'mirscore_output/'    |
+|out        | Specify output directory. Defaults to 'miRScore_output/'    |
 
 
 ### Bowtie
