@@ -624,6 +624,7 @@ def main():
                     print("Using hsa-let-7a for trimming: " + key)
 
             else:
+                subprocess.call(["mkdir","trimmedLibraries"])
                 key=args.trimkey
             #Change key to uppercase and to DNA
             key=key.upper()
