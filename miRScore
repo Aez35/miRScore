@@ -616,7 +616,7 @@ def main():
                 if args.kingdom == 'plant':
                     #ath-miR166a
                     print("No key provided for trimming.")
-                    key="GGACUGUUGUCUGGCUCGAGG"
+                    key="UCGGACCAGGCUUCAUUCCCC"
                     print("Using ath-miR166a sequence for trimming: "+key)
                 else:
                     print("No key provided for trimming.")
@@ -638,10 +638,11 @@ def main():
             for fastq in tqdm.tqdm(fastqs, desc="Library trimming",disable=None):
                 cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
                 output = subprocess.check_output(cmd, shell=True, text=True).strip()
+                print('Adapter detected: ' + output)
                 print("Trimming "+ fastq + "...")
                 (head, tail) = os.path.split(fastq)
                 tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
+                cmd='cutadapt -a '+ output + ' -o '+ tfile + ' -j ' + args.threads + ' --discard-untrimmed -m 12 --report minimal ' +fastq
                 run(cmd)
             print("Adapter trimming complete.")
             modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
@@ -1075,7 +1076,7 @@ def main():
         if mirna_dict[key][10] == "Fail":
             res_fail = res_fail + 1
     print("Total number of Failed miRNAs: " + str(res_fail))
-    print("     MIRNA loci rescued from failed loci: "+ str(len(pred_dict)))
+    print("     "Failed MIRNA that could pass with an alternative miRNA: "+ str(len(pred_dict)))
     print('')
     executionTime = (time.time() - startTime)
     print('Time to run: ' + str(int(executionTime)) + " seconds")
