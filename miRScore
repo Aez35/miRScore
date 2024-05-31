@@ -642,7 +642,7 @@ def main():
                 print("Trimming "+ fastq + "...")
                 (head, tail) = os.path.split(fastq)
                 tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -a '+ output + ' -o '+ tfile + ' -j ' + args.threads + ' --discard-untrimmed -m 12 --report minimal ' +fastq
+                cmd='cutadapt -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
                 run(cmd)
             print("Adapter trimming complete.")
             modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
