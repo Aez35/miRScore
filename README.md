@@ -34,11 +34,12 @@ All dependencies can be install through `conda`. To install and set up `conda`, 
 `pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html  
 `tqdm` >=4.65 https://pypi.org/project/tqdm/  
 `pandas`>=2.0.0 https://pandas.pydata.org/  
-
+`cutadapt`>=4.8 https://cutadapt.readthedocs.io/en/stable/guide.html
+`strucVis`>=0.8
 ### Create Conda environment on Mac/Linux environment
 
 ```
-conda create --name miRScore python viennarna pysam bowtie pandas biopython samtools tqdm strucvis
+conda create --name miRScore python viennarna pysam bowtie pandas biopython samtools tqdm strucvis cutadapt
 ```
 
 
@@ -87,6 +88,8 @@ miRScore [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature 
 |mm         | Allow up to 1 mismatch in miRNA reads                       |
 |n          | Specify a name to be added at the beginning of output files |
 |threads    | Specify number of threads to use during bam2fastq step      |
+|autotrim   | Trim fastq files using cutadapt                             |
+|trimkey    | miRNA sequence for detecting adapter sequences for trimming |
 |kingdom    | Specify either 'plant' or 'animal'                          |
 |out        | Specify output directory. Defaults to 'miRScore_output/'    |
 
@@ -106,19 +109,17 @@ For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs dow
 
 1. Download the two FASTA files provided in [TestData](https://github.com/Aez35/miRScore/tree/main/TestData) folder: `ath_miRBase_miRNAs.fa` and `ath_miRBase_precursors.fa`. Place these in your working directory.
 
-2. Create a directory for small RNA-seq libraries and retrieve bam files.
+2. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
 
 ```
 mkdir bamfiles
-cd bamfiles
-wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222445_trimmedSingle.bam
-wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222444_trimmedSingle.bam
-wget --no-check-certificate http://plantsmallrnagenes.science.psu.edu/ath-b10/alignments/SRR3222443_trimmedSingle.bam
+cd fastqs
+fasterq-dump SRR3222443 SRR3222444 SRR3222445
 cd ..
 ```
 3. Run miRScore
 ```
-miRScore -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -bamfile bamfiles/* -kingdom plant
+miRScore -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -fastq fastqs/* -kingdom plant -autotrim
 ```
 
 # Output
