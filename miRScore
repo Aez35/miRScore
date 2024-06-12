@@ -161,14 +161,14 @@ def score_animal(mature,star,hp,ss,maturepos,starpos):
     mature_db = ss[maturepos[0]:maturepos[1]]
 
     #Test that mature/mature* duplex does not contain greater than 5 mismatches
-    if (star_db.count(".")>=7) or (mature_db.count(".") >= 7):
+    if (star_db.count(".")>7) or (mature_db.count(".") > 7):
         mscore.append(0)
         reason.append("More than 7 mismatches")
         if (star_db.count("."))>(mature_db.count(".")):
             criteria.append(star_db.count("."))
         else:
             criteria.append(mature_db.count("."))
-    elif (star_db.count(".")>=5) or (mature_db.count(".") >= 5):
+    elif (star_db.count(".")>5) or (mature_db.count(".") > 5):
         mscore.append(10)
         reason.append("More than 5 mismatches")
         if (star_db.count("."))>(mature_db.count(".")):
@@ -240,7 +240,7 @@ def score_plant(mature,star,hp,ss,maturepos,starpos):
     mature_db = ss[maturepos[0]:maturepos[1]]
 
     #Test that mature/mature* duplex does not contain greater than 5 mismatches
-    if (star_db.count(".")>=5) or (mature_db.count(".") >= 5):
+    if (star_db.count(".")>5) or (mature_db.count(".") > 5):
         mscore.append(0)
         reason.append("More than 5 mismatches")
         if (star_db.count("."))>(mature_db.count(".")):
