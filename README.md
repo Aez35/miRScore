@@ -8,7 +8,7 @@ miRScore is a miRNA validation tool developed to analyze novel miRNAs prior to s
 
 What constitutes a plant miRNA is based on several structural and quantitative characteristics. This criteria can be found in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Here is a short summary of the criteria outlined in the manuscript:
 
-|Criteria                                                                |
+|microRNA Criteria                                                                |
 |:----------------------------------------------------------------------:|
 |Less than 5 mismatches in miRNA duplex                                  |
 |There must not be more than 3 nucleotides in asymmetric bulges          |
