@@ -18,6 +18,7 @@ What constitutes a plant miRNA is based on several structural and quantitative c
 |miRNA must be between 20-24 nucleotides for plants or 19-25 for animals |
 |Confirmation of the miRNA and miRNA* by small RNA-sequencing            |
 |At least 75% of reads that map to hairpin must come from miRNA duplex   |
+|At least 10 within an individual library must map to the miRNA duplex   |
 
 miRScore scores miRNAs based on these conditions, but with some leniency for certain criteria. These exceptions include *miRNAs between 23/24 nt and those with precursors greater than 300 nt*. Instead of treating these as a failed locus, miRScore will report a flag (see flags section for details) indicating that miRNA locus contains one or both of these characteristics. If all other criteria are met, that locus will pass. In addition to these leniencies, miRScore utilizes a read floor instead of requiring multiple libraries have sufficient reads of a miRNA locus. This means that if at least 10 reads map to the miRNA locus in at least one library, that miRNA will have met the criteria. If all other criteria are met, that miRNA will pass.
 
