@@ -67,13 +67,13 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 * `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `(-fastq fastqfiles | -bamfile bamfiles)`: Trimmed small RNA-seq libraries or mapped reads, either in FASTQ or BAM format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible. Please be sure to trim FASTQ files before submitting to miRScore.
+* `-fastq fastqfiles`: Trimmed small RNA-seq libraries or mapped reads, either in FASTQ format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible. Please be sure to trim FASTQ files before submitting to miRScore.
 
-**Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-miR173)! This is not case sensitive.**
+**Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-MIR173)! This is not case sensitive.**
 
 ## Usage
 ```
-miRScore [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
+miRScore [-help] [-fastq FASTQFILES.fq/fastq] -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
@@ -85,10 +85,9 @@ miRScore [-help] ([-fastq FASTQFILES.fq/fastq]|[-bamfile BAMFILES.bam]) -mature 
 |star       | FASTA file containing star sequences of novel miRNAs        |
 |hairpin    | FASTA file containing hairpin precursor sequences of mirnas |
 |fastq      | List of small RNA-seq libraries in FASTQ format             |
-|bam        | List of small RNA-seq libraries in bam format               |
 |mm         | Allow up to 1 mismatch in miRNA reads                       |
 |n          | Specify a name to be added at the beginning of output files |
-|threads    | Specify number of threads to use during bam2fastq step      |
+|threads    | Specify number of threads to use during trimming step       |
 |autotrim   | Trim fastq files using cutadapt                             |
 |trimkey    | miRNA sequence for detecting adapter sequences for trimming |
 |kingdom    | Specify either 'plant' or 'animal'                          |
@@ -113,7 +112,7 @@ For this example, miRScore was tested on known _Arabidopsis thaliana_ miRNAs dow
 2. Create a directory for small RNA-seq libraries and retrieve FASTQ files.
 
 ```
-mkdir bamfiles
+mkdir fastqs
 cd fastqs
 fasterq-dump SRR3222443 SRR3222444 SRR3222445
 cd ..
