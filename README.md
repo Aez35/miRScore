@@ -6,7 +6,7 @@ miRScore is a miRNA validation tool developed to analyze novel miRNAs prior to s
 
 ### **Determining what is a 'miRNA'**
 
-What constitutes a miRNA is based on several structural and quantitative characteristics. For plants, this criteria can be found in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). For animals, miRNA criteria is based on those outlined in [Rolle et al., (2016)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4816427/). Here is a short summary of the criteria outlined in the manuscript:
+What constitutes a miRNA is based on several structural and quantitative characteristics. For plants, this criteria can be found in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). For animals, miRNA criteria is based on those outlined in [Rolle et al. (2016)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4816427/). Here is a short summary of the criteria outlined in the manuscript:
 
 |microRNA Criteria                                                                |
 |:----------------------------------------------------------------------:|
