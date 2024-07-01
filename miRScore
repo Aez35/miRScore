@@ -29,7 +29,6 @@ for pack in req_packs:
 #Assign arguments for command line
 ap = argparse.ArgumentParser()
 
-ap.add_argument('-bamfile',nargs='*',help='One or more BAM alignment files')
 ap.add_argument('-fastq',nargs='*',help='One or more fastq alignment files')
 ap.add_argument("-mature", required = True, help="fasta file of mature miRNA sequence")
 ap.add_argument("-hairpin", required = True, help="fasta file of hairpin precursor sequence")
@@ -615,11 +614,11 @@ def main():
                     #ath-miR166a
                     print("No key provided for trimming.")
                     key="UCGGACCAGGCUUCAUUCCCC"
-                    print("Using ath-miR166a sequence for trimming: "+key)
+                    print("-trimkey used for discovering adapter sequence: "+key)
                 else:
                     print("No key provided for trimming.")
                     key="UGAGGUAGUAGGUUGUAUAGUU"
-                    print("Using hsa-let-7a for trimming: " + key)
+                    print("-trimkey used for discovering adapter sequence: " + key)
 
             else:
                 subprocess.call(["mkdir","trimmedLibraries"])
