@@ -180,7 +180,7 @@ Flags are reported to help the user determine what criteria a MIRNA locus did no
 * `NA` - The miRNA meets all miRScore criteria.
 
 ## reads.csv
-A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result. A 'Pass' indicates the miRNA meets the read floor and has a precision greater than 75% in that library. A 'Fail' indcates one of these criteria are not met.
+A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result and flag column. A 'Pass' indicates the MIRNA locus that meets the read floor (greater than 10 reads map to MIRNA locus), has at least one read mapped to both miR and miR*, and has a precision greater than 75% in the reported library. A 'Fail' indcates one of these criteria are not met.
 
 ## alt_mirna_results.csv
 When a miRNA 'fails' miRScore, meaning one or more of the criteria are not met, that locus will be reavaluated based on sequencing data. This revaluation is done using the reads mapped to the hairpin associated with the failed miRNA. miRScore will use samtools to select the most abundant read in the alignments/merged.bam file with a sequence between 20-24 nt that mapped to the failed miRNA hairpin. miRScore will then score that sequence as an alternative miRNA. Any of these alternative miRNAs that pass will be reported in alt_miRScore_Results.csv. These alternative miRNAs are not intended to be final confirmation of a miRNA locus, and should be evaluated with care.
