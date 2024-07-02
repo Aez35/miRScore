@@ -73,7 +73,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 ## Usage
 ```
-miRScore [-help] [-fastq FASTQFILES.fq/fastq] -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
+miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
