@@ -29,7 +29,7 @@ for pack in req_packs:
 #Assign arguments for command line
 ap = argparse.ArgumentParser()
 
-ap.add_argument('-fastq',nargs='*',help='One or more fastq alignment files')
+ap.add_argument('-fastq',nargs='*',required=True,help='One or more fastq alignment files')
 ap.add_argument("-mature", required = True, help="fasta file of mature miRNA sequence")
 ap.add_argument("-hairpin", required = True, help="fasta file of hairpin precursor sequence")
 ap.add_argument("-mm", help="Allow up to 1 mismatch in miRNA reads", nargs='?', const='')
