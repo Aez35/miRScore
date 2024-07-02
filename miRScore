@@ -724,6 +724,22 @@ def main():
     df2["msReads"] = df2["msReads"].astype(int)
     df2['result'] = df2.apply(lambda row: 'Pass' if row['mReads'] > 0 and row['precision'] >= 75 and row['msReads'] > 0 and (row['mReads'] + row['msReads'] >= 10) else 'Fail', axis=1)
 
+    # Add flags column based on the reads and precision conditions
+    def generate_flags(row):
+        flags = []
+        if row['mReads'] <= 0 or row['msReads']<=0:
+            flags.append("No miR duplex reads detected")
+        elif (row['mReads'] + row['msReads']<10):
+            flags.append("Less than 10 reads")
+        elif row['precision'] < 75:
+            flags.append("Precision less than 75%")
+        else:
+            flags.append("NA")
+        return ', '.join(flags)
+        
+    #Add flags to reads.csv
+    df2['flags'] = df2.apply(generate_flags, axis=1)
+
     # Save DataFrame to CSV
     filename = args.n + '_reads.csv' if args.n is not None else 'reads.csv'
     df2.to_csv(filename, sep=',', encoding='utf-8', index_label='miRNA')
