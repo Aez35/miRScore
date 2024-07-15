@@ -16,7 +16,7 @@ startTime = time.time()
 
 #Check required packages
 print("Checking required modules...")
-req_packs=["bowtie","samtools","RNAfold"]
+req_packs=["bowtie","samtools","RNAfold","cutadapt"]
 for pack in req_packs:
         path = shutil.which(pack)
         if path is not None:
@@ -35,7 +35,7 @@ ap.add_argument("-hairpin", required = True, help="fasta file of hairpin precurs
 ap.add_argument("-mm", help="Allow up to 1 mismatch in miRNA reads", nargs='?', const='')
 ap.add_argument("-n", help="Results file name")
 ap.add_argument("-nostrucvis", help="Do not include StrucVis output",  nargs='?', const='')
-ap.add_argument("-threads", help="Specify number of threads for bam2fq")
+ap.add_argument("-threads", help="Specify number of threads for samtools", default = 1)
 ap.add_argument("-kingdom", required=True,choices=["plant","animal"],help="Specify animal or plant")
 ap.add_argument("-star", help="fasta file of mirna* sequence")
 ap.add_argument("-out", help="output directory",default="miRScore_output")
@@ -57,8 +57,7 @@ if args.mm is not None:
     print("     'Mismatches' Yes")
 if args.nostrucvis is not None:
     print("     'No strucvis' Yes")
-if args.threads is not None:
-    print("     'Threads' " + args.threads)
+print("     'Threads' " + args.threads)
 print("     'Kingdom' "+ args.kingdom)
 if args.fastq is not None:
     print("     'Fastqs' " +str(args.fastq))
@@ -318,10 +317,10 @@ def align_fastqs(args, fastqs):
     for file in fastqs:
         if args.mm != None:
             print("Mapping " + file + "with one mismatch...")
-            subprocess.call(['bowtie', "-a","-v1","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-p", args.threads, "-a","-v1","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
         else:
             print("Mapping " + file + "...")
-            subprocess.call(['bowtie', "-a","-v0","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-p", args.threads, "-a","-v0","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
 
 def get_counts(bam, x, start_indx=None, stop_indx=None):
     if start_indx is None or stop_indx is None:
@@ -340,7 +339,7 @@ def predict_alt_mirnas(mirna_dict):
             if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
                 mir = str(mirna_dict[x][0])
                 hp = str(mirna_dict[x][8])
-                cmd = f"samtools view -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) > 19 && length($2) < 25 {{print}}' | head -n1 | awk '{{print $2}}'"
+                cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) > 19 && length($2) < 25 {{print}}' | head -n1 | awk '{{print $2}}'"
                 output = subprocess.check_output(cmd, shell=True, text=True).strip()
                 if output:
                     alt_mirnas[x] = output
@@ -641,7 +640,8 @@ def main():
                 print('Adapter detected: ' + output)
                 (head, tail) = os.path.split(fastq)
                 tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
+                cmd='cutadapt -j '+ args.threads + ' -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
+                print(cmd)
                 run(cmd)
             print("Adapter trimming complete.")
             modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
@@ -657,18 +657,18 @@ def main():
 
     #Index and sort each bam file
     for bam in bamfiles:
-        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", bam)
-        pysam.index("alignments/" + Path(bam).stem + "_s.bam")
+        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", "--threads", args.threads, bam)
+        pysam.index("alignments/" + Path(bam).stem + "_s.bam", "--threads", args.threads)
         cmd=("rm -rf "+ bam) 
         run(cmd)        
 
     #Read counting
     mirna_counts={}
     # Merge library files, filter by minimum read length, index merged BAM file, and remove temporary file
-    run("samtools merge -r alignments/merge1.bam alignments/*s.bam")
-    run("samtools view -e 'qlen>15' -bh alignments/merge1.bam > alignments/merged.bam")
+    run("samtools merge -@ " + args.threads + " -r alignments/merge1.bam alignments/*s.bam")
+    run("samtools view -@ "+ args.threads + " -e 'qlen>15' -bh alignments/merge1.bam > alignments/merged.bam")
     print("Indexing merged BAM file...")
-    run("samtools index alignments/merged.bam")
+    run("samtools index -@ " + args.threads + " alignments/merged.bam")
     run("rm -rf alignments/merge1.bam")
 
     #Create a list of read groups in the merged bam file.
@@ -1118,8 +1118,5 @@ def main():
     print('Time to run: ' + str(int(executionTime)) + " seconds")
     print('Run Completed!')
 
-
 if __name__ == "__main__":
     main()
-
-
