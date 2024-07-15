@@ -57,7 +57,7 @@ if args.mm is not None:
     print("     'Mismatches' Yes")
 if args.nostrucvis is not None:
     print("     'No strucvis' Yes")
-print("     'Threads' " + args.threads)
+print("     'Threads' " + str(args.threads))
 print("     'Kingdom' "+ args.kingdom)
 if args.fastq is not None:
     print("     'Fastqs' " +str(args.fastq))
