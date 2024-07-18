@@ -317,10 +317,10 @@ def align_fastqs(args, fastqs):
     for file in fastqs:
         if args.mm != None:
             print("Mapping " + file + "with one mismatch...")
-            subprocess.call(['bowtie', "-p", args.threads, "-a","-v1","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-p", str(args.threads), "-a","-v1","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
         else:
             print("Mapping " + file + "...")
-            subprocess.call(['bowtie', "-p", args.threads, "-a","-v0","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+            subprocess.call(['bowtie', "-p", str(args.threads), "-a","-v0","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
 
 def get_counts(bam, x, start_indx=None, stop_indx=None):
     if start_indx is None or stop_indx is None:
@@ -640,7 +640,7 @@ def main():
                 print('Adapter detected: ' + output)
                 (head, tail) = os.path.split(fastq)
                 tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -j '+ args.threads + ' -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
+                cmd='cutadapt -j '+ str(args.threads) + ' -a '+ output + ' -o '+ tfile + ' --discard-untrimmed -m 12 --report minimal ' +fastq
                 print(cmd)
                 run(cmd)
             print("Adapter trimming complete.")
@@ -657,18 +657,18 @@ def main():
 
     #Index and sort each bam file
     for bam in bamfiles:
-        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", "--threads", args.threads, bam)
-        pysam.index("alignments/" + Path(bam).stem + "_s.bam", "--threads", args.threads)
+        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", "--threads", str(args.threads), bam)
+        pysam.index("alignments/" + Path(bam).stem + "_s.bam", "--threads", str(args.threads))
         cmd=("rm -rf "+ bam) 
         run(cmd)        
 
     #Read counting
     mirna_counts={}
     # Merge library files, filter by minimum read length, index merged BAM file, and remove temporary file
-    run("samtools merge -@ " + args.threads + " -r alignments/merge1.bam alignments/*s.bam")
-    run("samtools view -@ "+ args.threads + " -e 'qlen>15' -bh alignments/merge1.bam > alignments/merged.bam")
+    run("samtools merge -@ " + str(args.threads) + " -r alignments/merge1.bam alignments/*s.bam")
+    run("samtools view -@ "+ str(args.threads) + " -e 'qlen>15' -bh alignments/merge1.bam > alignments/merged.bam")
     print("Indexing merged BAM file...")
-    run("samtools index -@ " + args.threads + " alignments/merged.bam")
+    run("samtools index -@ " + str(args.threads) + " alignments/merged.bam")
     run("rm -rf alignments/merge1.bam")
 
     #Create a list of read groups in the merged bam file.
