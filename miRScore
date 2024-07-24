@@ -844,11 +844,11 @@ def main():
             #Python indexing of mir position
             mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
             mirstar=hp[mirsspos[0]:mirsspos[1]]
-            add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            add_values_in_dict(mirna_dict,mirfail,[mat.translate(str.maketrans("tT", "uU")),len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq.translate(str.maketrans("tT", "uU")),len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
         else:
             seq= str(hp_dict[mirfail].seq).upper()
             mat = str(mature_dict[original_key].seq).upper()
-            add_values_in_dict(mirna_dict,mirfail,[mat,len(mat),"NA","NA","NA","NA","NA","NA",seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            add_values_in_dict(mirna_dict,mirfail,[mat.translate(str.maketrans("tT", "uU")),len(mat),"NA","NA","NA","NA","NA","NA",seq.translate(str.maketrans("tT", "uU")),len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
 
     DEVNULL = open(os.devnull, 'w')
 
