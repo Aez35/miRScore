@@ -656,8 +656,8 @@ def main():
 
     #Index and sort each bam file
     for bam in bamfiles:
-        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", "--threads", str(args.threads), bam)
-        pysam.index("alignments/" + Path(bam).stem + "_s.bam", "--threads", str(args.threads))
+        pysam.sort("-o", "alignments/" + Path(bam).stem + "_s.bam", "-@", str(args.threads), bam)
+        pysam.index("alignments/" + Path(bam).stem + "_s.bam", "-@", str(args.threads))
         cmd=("rm -rf "+ bam) 
         run(cmd)        
 
