@@ -78,20 +78,19 @@ miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRP
 
 ## Options
 
-|Option     |Description                                                  |
-|:---------:|:-----------------------------------------------------------:|
-|help       | prints help message                                         |
-|mature     | FASTA file containing mature sequences of novel miRNAs      |
-|star       | FASTA file containing star sequences of novel miRNAs        |
-|hairpin    | FASTA file containing hairpin precursor sequences of mirnas |
-|fastq      | List of small RNA-seq libraries in FASTQ format             |
-|mm         | Allow up to 1 mismatch in miRNA reads                       |
-|n          | Specify a name to be added at the beginning of output files |
-|threads    | Specify number of threads to use during trimming step       |
-|autotrim   | Trim fastq files using cutadapt                             |
-|trimkey    | miRNA sequence for detecting adapter sequences for trimming |
-|kingdom    | Specify either 'plant' or 'animal'                          |
-|out        | Specify output directory. Defaults to 'miRScore_output/'    |
+|Option     |Description                                                     |
+|:---------:|:-----------------------------------------------------------:   |
+|help       | prints help message                                            |
+|mature     | FASTA file containing mature and star sequences of novel miRNAs|
+|hairpin    | FASTA file containing hairpin precursor sequences of mirnas    |
+|fastq      | List of small RNA-seq libraries in FASTQ format                |
+|mm         | Allow up to 1 mismatch in miRNA reads                          |
+|n          | Specify a name to be added at the beginning of output files    |
+|threads    | Specify number of threads to use during trimming step          |
+|autotrim   | Trim fastq files using cutadapt                                |
+|trimkey    | miRNA sequence for detecting adapter sequences for trimming    |
+|kingdom    | Specify either 'plant' or 'animal'                             |
+|out        | Specify output directory. Defaults to 'miRScore_output/'       |
 
 
 ### Bowtie
