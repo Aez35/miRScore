@@ -1107,8 +1107,8 @@ def main():
     for key in mirna_dict:
         if mirna_dict[key][10] == "Fail":
             res_fail = res_fail + 1
-    print("Total number of Failed miRNAs: " + str(res_fail))
-    print("     Failed MIRNA that could pass with an alternative miRNA: " + str(len(pred_dict)))
+    print("Total number of Failed MIRNA loci: " + str(res_fail))
+    print("     Failed miRNAs that could pass with an alternative miRNA: " + str(len(pred_dict)))
     print('')
     executionTime = (time.time() - startTime)
     print('Time to run: ' + str(int(executionTime)) + " seconds")
