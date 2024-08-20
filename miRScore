@@ -853,7 +853,7 @@ def main():
     DEVNULL = open(os.devnull, 'w')
 
     #Write final output file
-    header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", "msStop", "precSeq", "precLen", "result", "flags", "mismatches", "bulges", "mReads", "msReads", "totReads", "numLibraries", "precision"]
+    header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", "msStop", "precSeq", "precLen", "result", "flags", "mismatches", "bulges", "mReads", "msReads", "totReads", "numLibraries", "precisionScore"]
     output_file = args.n + "_miRScore_results.csv" if args.n else "miRScore_results.csv"
 
     with open(output_file, mode="w", newline='') as csv_out:
@@ -971,7 +971,7 @@ def main():
 
     header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", 'msStop',
             "precSeq", "precLen", "result", "flags", "mismatches", "bulges", 'mReads', 'msReads',
-            "totReads", "nlibraries", "precision"]
+            "totReads", "nlibraries", "precisionScore"]
 
     with open(output_file, mode="w", newline='') as csv_out:
         csv_writer = writer(csv_out)
