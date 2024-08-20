@@ -853,7 +853,7 @@ def main():
     DEVNULL = open(os.devnull, 'w')
 
     #Write final output file
-    header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", "msStop", "precSeq", "precLen", "result", "flags", "mismatches", "bulges", "mReads", "msReads", "totReads", "numLibraries", "precisionScore"]
+    header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", "msStop", "precSeq", "precLen", "result", "flags", "mismatches", "bulges", "mReads", "msReads", "totReads", "numLibraries", "precision"]
     output_file = args.n + "_miRScore_results.csv" if args.n else "miRScore_results.csv"
 
     with open(output_file, mode="w", newline='') as csv_out:
@@ -914,11 +914,11 @@ def main():
 
     # Reshape DataFrame and set column names
     df2 = pd.DataFrame(df.values.reshape(-1, 6), index=index,
-                    columns=['library', 'mReads', 'msReads','locusReads', 'hairpinReads', 'precisionScore'])
+                    columns=['library', 'mReads', 'msReads','locusReads', 'hairpinReads', 'precision'])
 
-    # Convert 'precisionScore' to float and add 'result' column
-    df2['precisionScore'] = df2['precisionScore'].astype(float)
-    df2['result'] = df2.apply(lambda row: 'Pass' if row['precisionScore'] >= 75 and row['locusReads'] >= 10 else 'Fail', axis=1)
+    # Convert 'precision' to float and add 'result' column
+    df2['precision'] = df2['precision'].astype(float)
+    df2['result'] = df2.apply(lambda row: 'Pass' if row['precision'] >= 75 and row['locusReads'] >= 10 else 'Fail', axis=1)
 
     # Save DataFrame to CSV
     filename = args.n + '_alt_reads.csv' if args.n is not None else 'alt_reads.csv'
@@ -971,7 +971,7 @@ def main():
 
     header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", 'msStop',
             "precSeq", "precLen", "result", "flags", "mismatches", "bulges", 'mReads', 'msReads',
-            "totReads", "nlibraries", "precisionScore"]
+            "totReads", "nlibraries", "precision"]
 
     with open(output_file, mode="w", newline='') as csv_out:
         csv_writer = writer(csv_out)
