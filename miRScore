@@ -445,7 +445,7 @@ def predict_alt_mirnas(mirna_dict):
                 if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
                     mir = str(mirna_dict[x][0])
                     hp = str(mirna_dict[x][8])
-                    cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) >= 19 && length($2) =< 25 {{print}}' | head -n1 | awk '{{print $2}}'"
+                    cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) >= 19 && length($2) <= 25 {{print}}' | head -n1 | awk '{{print $2}}'"
                     output = subprocess.check_output(cmd, shell=True, text=True).strip()
                     if output:
                         alt_mirnas[x] = output
@@ -534,6 +534,7 @@ def generate_options(hp):
 ### _______________________ Code begins __________________________ ###
 
 def main():
+
     #Create output directory
     subprocess.call(["mkdir",args.out])
     os.chdir(args.out)
@@ -767,6 +768,7 @@ def main():
                     key="UCGGACCAGGCUUCAUUCCCC"
                     print("-trimkey used for discovering adapter sequence: "+key)
                 else:
+                    #hsa-let-7a
                     print("No key provided for trimming.")
                     key="UGAGGUAGUAGGUUGUAUAGUU"
                     print("-trimkey used for discovering adapter sequence: " + key)
@@ -785,7 +787,11 @@ def main():
 
             for fastq in tqdm.tqdm(fastqs, desc="Library trimming",disable=None):
                 cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
+                print(cmd)
                 output = subprocess.check_output(cmd, shell=True, text=True).strip()
+                print(output)
+                if "G" not in output:
+                    sys.exit("No adapter detected. Please check input libraries need trimming.")
                 print("Trimming "+ fastq + "...")
                 print('Adapter detected: ' + output)
                 (head, tail) = os.path.split(fastq)
@@ -978,21 +984,37 @@ def main():
                 #If any miRNAs have a library that meets the read floor, check precision and report it failed for precision.
                 if any(num >= floor  for num in totreads):
                     if sum(mir_reads)>0 and sum(mirstar_reads)>0:
-                        if any(df2.loc[x]["flags"] == 'Precision less than 75%'):
-                            if mirna_dict[x][11]=="NA":
-                                mirna_dict[x][11]="Precision less than 75%"
-                                add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                        if len(bamfiles)>1:
+                            if any(df2.loc[x]["flags"] == 'Precision less than 75%'):
+                                if mirna_dict[x][11]=="NA":
+                                    mirna_dict[x][11]="Precision less than 75%"
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                                else:
+                                    mirna_dict[x][11]+=";Precision less than 75%"      
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision]) 
                             else:
-                                mirna_dict[x][11]+=";Precision less than 75%"      
-                                add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision]) 
+                                if mirna_dict[x][11]=="NA":
+                                    mirna_dict[x][11]="No mature or star reads detected"
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                                else:
+                                    mirna_dict[x][11]+=";No mature or star reads detected"      
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])    
                         else:
-                            if mirna_dict[x][11]=="NA":
-                                mirna_dict[x][11]="No mature or star reads detected"
-                                add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                            if df2.loc[x]["flags"] == 'Precision less than 75%':
+                                if mirna_dict[x][11]=="NA":
+                                    mirna_dict[x][11]="Precision less than 75%"
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                                else:
+                                    mirna_dict[x][11]+=";Precision less than 75%"      
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision]) 
                             else:
-                                mirna_dict[x][11]+=";No mature or star reads detected"      
-                                add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])    
-                #Otherwise, if no libraries had at least 10 reads, report it failed for reads.
+                                if mirna_dict[x][11]=="NA":
+                                    mirna_dict[x][11]="No mature or star reads detected"
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
+                                else:
+                                    mirna_dict[x][11]+=";No mature or star reads detected"      
+                                    add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])  
+                    #Otherwise, if no libraries had at least 10 reads, report it failed for reads.
                 else:                    
                     if mirna_dict[x][11] =="NA":
                         mirna_dict[x][11]="Less than 10 reads"
@@ -1259,7 +1281,7 @@ def main():
     run(cmd)
     cmd="rm -rf RNAplots/failed/*.fa"
     run(cmd)
-    cmd="rm -rf *.ebwt|rm -rf *.fai|rm -rf tmp* | rm -rf alignmnets/*bai"
+    cmd="rm -rf *.ebwt|rm -rf *.fai|rm -rf tmp* | rm -rf alignments/*bai"
     run(cmd)
     cmd="rm -rf ms_fastqs/"
     run(cmd)
