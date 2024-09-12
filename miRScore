@@ -787,7 +787,6 @@ def main():
 
             for fastq in tqdm.tqdm(fastqs, desc="Library trimming",disable=None):
                 cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
-                print(cmd)
                 output = subprocess.check_output(cmd, shell=True, text=True).strip()
                 print(output)
                 if "G" not in output:
