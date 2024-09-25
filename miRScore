@@ -622,8 +622,8 @@ def main():
         name_dict[og_hp] = og_mir,og_star
         
         #Hairpin and mature sequences based on og name
-        hairpin=str(hp_dict[og_hp].seq)
-        mature=str(mir_dict[og_mir].seq)
+        hairpin=str(hp_dict[og_hp].seq).upper()
+        mature=str(mir_dict[og_mir].seq).upper()
 
         #Index mature sequence
         if mature in hairpin:
@@ -639,7 +639,7 @@ def main():
 
             #Index star sequence if exists, otherwise find star sequence.
             if og_star is not None:
-                star=str(mir_dict[og_star].seq)
+                star=str(mir_dict[og_star].seq).upper()
                 if star in hairpin:
                     starstarti=hairpin.index(star)
                     starstop=(starstarti+len(star))
@@ -650,7 +650,7 @@ def main():
                 else:
                     og_star= None
                     starpos=get_s_rels(maturestart,maturestop,ss)
-                    star=hairpin[(starpos[0]-1):starpos[1]]
+                    star=hairpin[(starpos[0]-1):starpos[1]].upper()
 
             else:
                 starpos=get_s_rels(maturestart,maturestop,ss)
@@ -1022,24 +1022,22 @@ def main():
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
-    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Mature not found in hairpin sequence','Star not found in hairpin sequence','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
+    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
     #Add failed miRNAs into dictionary
 
     for mirfail in failed:
         if failed[mirfail] not in fails:
-            seq = str(hp_dict[mirfail].seq).upper()
+            hairpin = str(hp_dict[mirfail].seq).upper()
                 #mature sequence
             og_mir=str(name_dict[mirfail][0])
-            mat = str(mir_dict[og_mir].seq).upper()
-            mstart=seq.index(mat)
-            mstop=(seq.index(mat)+len(mat))
+            mature = str(mir_dict[og_mir].seq).upper()
+            maturestart=seq.index(mature)
+            maturestop=(seq.index(mature)+len(mature))
 
-            (ss, mfe)=RNA.fold(seq)
-            mirspos=get_s_rels(mstart,mstop,ss)
-            #Python indexing of mir position
-            mirsspos=[(mirspos[0]-1),(mirspos[1]-1)]
-            mirstar=hp[mirsspos[0]:mirsspos[1]]
-            add_values_in_dict(mirna_dict,mirfail,[mat.translate(str.maketrans("tT", "uU")),len(mat),mstart,mstop,mirstar,len(mirstar),mirsspos[0],mirsspos[1],seq,len(seq),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            (ss, mfe)=RNA.fold(hairpin)
+            starpos=get_s_rels(maturestart,maturestop,ss)
+            star=hairpin[(starpos[0]-1):starpos[1]].upper()
+            add_values_in_dict(mirna_dict,mirfail,[mat.translate(str.maketrans("tT", "uU")),len(mat),mstart,mstop,star,len(star),"NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
         else:
             seq= str(hp_dict[mirfail].seq).upper()
             og_mir=str(name_dict[mirfail][0])
@@ -1313,4 +1311,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
