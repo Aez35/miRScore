@@ -1037,7 +1037,7 @@ def main():
             (ss, mfe)=RNA.fold(hairpin)
             starpos=get_s_rels(maturestart,maturestop,ss)
             star=hairpin[(starpos[0]-1):starpos[1]].upper()
-            add_values_in_dict(mirna_dict,mirfail,[mature.translate(str.maketrans("tT", "uU")),len(mature),mstart,mstop,star,len(star),"NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            add_values_in_dict(mirna_dict,mirfail,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,star,len(star),"NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
         else:
             seq= str(hp_dict[mirfail].seq).upper()
             og_mir=str(name_dict[mirfail][0])
