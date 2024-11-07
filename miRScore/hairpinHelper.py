@@ -83,6 +83,10 @@ def process_mirnas(input_file, output_file):
         f"cat {input_file} | sed -E '/(>)/!s/U/T/g' > {output_file}",
         shell=True
     )
+    
+def run(cmd) :
+#Run subprocess
+    proc = subprocess.call(cmd, shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 #__________________________ Code begins ________________________________
 def main():
@@ -104,6 +108,9 @@ def main():
 
     print("Created new hairpin FASTA file called 'miRScore_adjusted_hairpins.fa' with " + str(newLen-hpLen) + " additional hairpin sequence(s).")
     print('')
+
+    cmd="rm -rf tmp*"
+    run(cmd)
     
 if __name__ == "__main__":
     main()
