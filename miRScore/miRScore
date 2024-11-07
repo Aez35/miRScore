@@ -761,27 +761,31 @@ def main():
     #miRNAs that start at position 1
     #Quit program is any exist
     if len(mirpos_error)>0 and len(starpos_error) and len(character_error)>0:
-        print('Error! These miRNAs start at position 1 of the hairpin. The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend or remove for the following hairpins.')
+        print('Error! There are multiple errors in the dataset.')
+        print('Please address the following issues: ')
         print("")
-        print('Mature miRNAs sequences that start at position 1 hairpin: ')
+        print('Mature miRNAs sequences that index to the first or last position of the hairpin: ')
         print(mirpos_error)
         print("")
-        print("Star miRNAs sequences that start at position 1 of the hairpin: ")
+        print("Star miRNAs sequences that index to the first or last position of the hairpin: ")
         print(starpos_error)
         print("")
-        print( "Error! The following have characters besides A, T, G, C, or U in the sequence. Please ammend or remove the following:")
+        print( "The following miRNA or hairpin sequences have characters besides A, T, G, C, or U in the sequence. Please ammend or remove the following:")
         print(character_error)
         sys.exit()
     elif len(mirpos_error)>0:
-        print('Error! These miRNAs start at position 1 of the hairpin. The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend or remove for the following hairpins:')
-        print('Mature miRNAs that start at position 1: ')
+        print('Error! These miRNAs start at position 1 of the hairpin: ")
         print(mirpos_error)
+        print(" ")
+        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend the hairpin sequences or remove them")
     elif len(starpos_error)>0:
-        print('Error! These miRNAs have star sequences that start at position 1 of the hairpin. The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend or remove for the following hairpins:')
+        print('Error! These miRNA star sequences start at position 1 of the hairpin: ")
         print(starpos_error)
+        print(" ")
+        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend the hairpin sequences or remove them")
         sys.exit()
     elif len(character_error)>0:
-        print( "Error! The following have characters besides A, T, G, C, or U in the sequence. Please ammend or remove the following:")
+        print( "Error! The following have characters besides A, T, G, C, or U in the sequence. Please fix or remove the following sequences:")
         print(character_error)
         sys.exit()
 ## ______________________BEGIN READ CHECK _____________________##
