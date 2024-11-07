@@ -750,7 +750,7 @@ def main():
     
     if len(noHP_error)>0:
         print(f"Error! The following MIRNAs have no mature sequences that match their identifiers. "+ str(noHP_error))
-        print("        Please check all MIRNA hairpins in the hairpin FASTA have miRNAs in the mature file with the same name.") 
+        print("        Please check all MIRNA hairpins in the hairpin FASTA file have miRNAs in the mature FASTA file with the same name.") 
         print("        If you have multiple miRNAs assigned to a single locus (i.e. osa-miR159a.1/osa-miR159a.2 to osa-MIR159a)")
         print("        please run 'hairpinHelper.py' located in the miRScore directory, then rerun miRScore with the'miRScore_adjusted_hairpins.fa' file as the hairpin FASTA input.")
         print("        See GitHub README for more details.")
