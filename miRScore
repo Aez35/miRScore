@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#miRScore V0.93
 
 import RNA, re, pysam
 from pysam import FastaFile
