@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#miRScore V0.2.1
+version = '0.2.2'
 
 import RNA, re, pysam
 from pysam import FastaFile
@@ -56,7 +56,7 @@ else:
 
 #print log
 print("--------")
-print("miRScore version 0.9")
+print("miRScore version " + version)
 print("Options:")
 print("     'Mature file' " + args.mature)
 print("     'Hairpin file' " + args.hairpin)
@@ -541,7 +541,7 @@ def main():
 
     #Write log file for output
     text_file = open("log.txt", "w")
-    text_file.write("miRScore version 0.2.1 \n")
+    text_file.write("miRScore version " + version + " \n")
     text_file.write("Options: \n")
     text_file.write("     'Mature file' " + args.mature + "\n")
     text_file.write("     'Hairpin file' " + args.hairpin +"\n")
@@ -602,7 +602,7 @@ def main():
         options = generate_options(hp)
         mature_option = next((option for option in options[0] if option in normalized_mirdict), None)
         if mature_option == None:
-            noHP_error.append(hp)
+            noHP_error.append(normalized_hpdict[hp])
         if mature_option is not None:
             if '3p' not in mature_option:
                 star_option = next((option for option in options[1] if option in normalized_mirdict), None)
@@ -617,14 +617,15 @@ def main():
         try:
             og_mir=normalized_mirdict[mature_option]
         except:
-            if hp not in noHP_error:
-                noHP_error.append(hp)
+            if og_hp not in noHP_error:
+                noHP_error.append(og_hp)
 
         if star_option is not None:
             try:
                 og_star=normalized_mirdict[star_option]
             except:
-                noHPstar_error.append(hp)
+                if og_hp not in noHP_error:
+                    noHPstar_error.append(og_hp)
         else:
             og_star=None
 
@@ -748,10 +749,10 @@ def main():
         sys.exit("Error! No candidate miRNAs left to score.")
     
     if len(noHP_error)>0:
-        print(f"Error! The following MIRNAs have no mature sequences that match their identifiers. "+ str(noHP_error))
-        print("        Please check all MIRNA hairpins in the hairpin FASTA file have miRNAs in the mature FASTA file with the same name.") 
+        print(f"Error! The following entries in the MIRNA hairpin file '" + args.hairpin + "' have no mature sequences that match their identifiers in file '" + args.mature + "'. "+ str(noHP_error))
+        print("        Please check all hairpins in the hairpin FASTA file have miRNAs in the mature FASTA file with the same name.") 
         print("        If you have multiple miRNAs assigned to a single locus (i.e. osa-miR159a.1/osa-miR159a.2 to osa-MIR159a)")
-        print("        please run 'hairpinHelper.py' located in the miRScore directory, then rerun miRScore with the'miRScore_adjusted_hairpins.fa' file as the hairpin FASTA input.")
+        print("        please run 'hairpinHelper' then rerun miRScore with the'miRScore_adjusted_hairpins.fa' file as the hairpin FASTA input.")
         print("        See GitHub README for more details.")
         sys.exit()
 
