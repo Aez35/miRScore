@@ -67,7 +67,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 * `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `-fastq fastqfiles`: Trimmed small RNA-seq libraries or mapped reads, either in FASTQ format. The specified files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this will cause issues with read counting. It is best to avoid the use of merged libraries when possible. Please be sure to trim FASTQ files before submitting to miRScore.
+* `-fastq fastqfiles`:  Small RNA-seq libraries in FASTQ format. If libraries are untrimmed, you must use option '-autotrim' to trim libraries. You may supply a key for trimming using option '-trimkey'. Default trimkey is ATH-miR166a for plants and HSA-let-7a for animals. Ideally, all FASTQ files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this may cause issues with read counting. It is recommended to avoid the use of merged libraries when possible to ensure highest confidence in miRNA validation. See FAQ for more details.
 
 **Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-MIR173)! This is not case sensitive.**
 
@@ -75,7 +75,7 @@ miRScore requires two FASTA files and multiple small RNA-seq libraries in order 
 
 # miRScore
 ```
-miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
+miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-autotrim] [-trimkey KEY] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
@@ -101,7 +101,7 @@ Bowtie has been configured to run the following options.
 - a, Report all valid alignments
 - v, Allow 0 or 1 mismatch depending on option 'mm'.
 
-Rather than mapping to a genome, miRScore uses Bowtie to map each read to the miRNA hairpin.
+Rather than mapping to a genome, miRScore uses Bowtie to map each read to the MIRNA hairpin.
 
 
 # Example
@@ -130,8 +130,8 @@ miRScore has six outputs:
 * `reads.csv`: A csv file containing read counts for miR, miR*, and total reads mapped to hairpin in each submitted library.
 * `alt_miRScore_Results.csv`: A csv file containing the results for alternative miRNA suggestions on a failed miRNA hairpin.
 * `alt_reads.csv`: A csv file containing read counts for alternative miR, miR*, and total reads mapped to hairpin in each submitted library
-* `RNAplots`: Directory containing post-script images for each miRNA secondary structure including miR(red)/miR*(green) annotation.
-* `strucVis`: Directory containing post-script images depicting miRNA secondary structure and small RNA read depth for each miRNA locus.
+* `RNAplots`: Directory containing PDF images for each miRNA secondary structure including miR(red)/miR*(green) annotation.
+* `strucVis`: Directory containing PDF images depicting miRNA secondary structure and small RNA read depth for each miRNA locus.
 
 ## miRScore_Results.csv
 
@@ -226,15 +226,23 @@ python hairpinHelper [-help] -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa
 
 # FAQ
 ### 1. How does miRScore handle reporting reads?
-miRScore reports read counts for the miRNA duplex, totReads, and precision based on which sRNA-seq libraries pass or fail. If a user submits 10 libraries, and all the expression criteria are met in only 2, `mreads`, `msReads`, `totReads`, and `precision` will be reported for only those 2 libraries. If the expression criteria is not met in any individual library, the miRNA will Fail and miRScore will report these values for all 10 libraries.
+miRScore reports read counts for the miRNA duplex, totReads, and precision based on which sRNA-seq libraries pass or fail. If a user submits 10 libraries, and all the expression criteria are met in only 2, `mreads`, `msReads`, `totReads`, and `precision` will reflect only those 2 libraries, while the remaining 8 will not be included. Read counts for each locus in each of the 10 libraries can still be found in 'reads.csv' file. If either expression criterion is not met in any individual library, the miRNA will Fail and miRScore will report these values for all 10 libraries.
 
 ### 2. Why do some of my miRNAs have 'NA's in certain columns?
-miRNA secondary structure plays a big role in determining many of the miRNA criteria. If the hairpin structure forms secondary stem loops, large bulges, or if the miRNA indexes to the stem loop or large loop, the miRNA duplex can be impossible to determine. Without this duplex, it's not possible to score a miRNA locus. In this instance, miRScore will report only the user-provided information and report 'NA's.
+MIRNA secondary structure plays a big role in determining many of the miRNA criteria. If the miRNA or miRNA* sequences index to the stem loop or large secondary loop, the miRNA duplex can be impossible to determine. Without this duplex, it's not possible to score a MIRNA locus. In this instance, miRScore will report only the user-provided information and report 'NA's in all other columns.
 
-### 3. Why is my miRNA failing due to no reads detected?
-In order to meet the criteria outlined for a high confidence miRNA, at least 1 read must map to both the miRNA and the miRNA*. miRScore reports three read counts in the results file: **mReads**, **msReads**, and **totReads**. **mReads** and **msReads** are counted using the reported locations on the hairpin +/- 1 position to account for variance. If no reads are detected at either of positions, miRScore will flag that locus as "No mature or star reads detected". In some cases, there are reads mapping to other regions of the hairpin, but not to the miRNA duplex. If this happens, you may see **mReads** and **msReads** reported as 0 while **totReads** is greater than 0. This is because **totReads** is the total number of reads that map to the hairpin, not just the miRNA duplex.
+### 3. Why is my miRNA failing due to no reads detected, but I see reads reported in both 'mReads' and 'msReads'?
+miRscore counts reads in **individual sRNA-seq libraries**. In order for a MIRNA locus to pass, there must be reads mapping to both the miRNA and miRNA* positions **within a single library**. This is to prevent false positive validation of miRNAs with a single read in dozens of libraries that may occur if a merged library was used.
 
-miRscore counts reads in **individual sRNA-seq libraries**. In order for a miRNA locus to pass, there must be reads mapping to both the miRNA and miRNA* positions **within a single library**. This is to prevent false positive validation of miRNAs with a single read in dozens of libraries that may occur if a merged library was used. 
+miRScore reports three read count values in the results file: `mReads`, `msReads`, and `totReads`. `mReads` and `msReads` are counted using the reported locations of the miRNA/miRNA* on the hairpin +/- 1 position to account for variance. If no reads are detected at one or both of these positions, miRScore will flag that locus as "No mature or star reads detected". In some cases, there are reads mapping to other regions of the hairpin, but not to the miRNA duplex. If this happens, you may see `mReads` or `msReads` reported as 0 while `totReads` is greater than 0. This is because `totReads` is the total number of reads that map to the hairpin, not just the miRNA duplex.
+
+In other cases, you may see "No mature or star reads detected", but `mReads` and `msReads` is reported to be greater than 0. This will only occur if you have multiple libraries submitted and miRNA/miRNA* reads are not detected within a single library for ANY library. Meaning, each library contains only miRNA OR miRNA* reads, but not both. If all libraries fail expression criteira, miRScore will report combined read counts for all of the failed libraries. To inspect the read counts in individual libraries, please see the 'reads.csv' file output by miRScore.
+
+
+### 4. Why is the use of merged libraries not suggested?
+As stated in FAQ 3, this is to prevent false positive validation of a MIRNA locus with a single read in dozens of libraries that may occur if a merged library was used. 
+
+The use of merged libraries is not suggested because one of the primary criteria miRScore uses as validation of miRNAs is ensuring both the miRNA and miRNA* is expressed within a single library. This provides a level of confidence that the miRNA is expressed at detectable levels within the sample, and that the reads are in fact miRNA reads with the characteristic two-stack mapping pattern. In some instances, miRNAs annotated by existing sRNA annotation tools only pass when the merged library is used, as it is common practice to use merged libraries to annotate miRNAs. Please be assured that miRScore will still handle merged libraries accurately, but the miRNA and miRNA* abundance reported in the results will reflect the overall abundance and not that of individual libraries. Please see FAQ 1 on how reads are reported when multiple libraries are submitted.
 
 
 
