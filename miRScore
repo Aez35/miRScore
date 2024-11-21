@@ -541,7 +541,7 @@ def main():
 
     #Write log file for output
     text_file = open("log.txt", "w")
-    text_file.write("miRScore version 0.9 \n")
+    text_file.write("miRScore version " + version + "\n")
     text_file.write("Options: \n")
     text_file.write("     'Mature file' " + args.mature + "\n")
     text_file.write("     'Hairpin file' " + args.hairpin +"\n")
