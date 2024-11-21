@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#miRScore V0.2.1
 
 # This python script was written to address issues in datasets being submitted to miRScore where multiple miRNAs come from a single locus. 
 # This occurs with miRBase datasets frequently, where two miRNAs (i.e. osa-miR159a.1 and osa-miR159a.2) have a single hairpin precursor sequence listed (i.e. osa-MIR159a).
@@ -31,38 +30,51 @@ if not os.path.exists(args.hairpin):
     sys.exit(msg)
 
 
-def check_multiple(hp_dict,mir_dict):
+def check_multiple(hp_dict, mir_dict):
     # Temporary dictionary to hold new entries
     new_entries = {}
 
-    # Loop through each key in hp_dict
-    for key in list(hp_dict.keys()):  # Use list(hp_dict.keys()) to avoid modifying during iteration
+    # Loop through each key in hp_dict (hairpins)
+    for key in list(hp_dict.keys()):  # Use list to avoid modifying during iteration
         # Track if new entries are added for this key
         has_new_entries = False
 
-        # Check for keys in mir_dict that start with the current key from hp_dict
+        # Check for miRNAs (sub_key) that match the current hairpin (key)
         for sub_key, seq_record in mir_dict.items():
-
             if sub_key.upper().startswith(key.upper()) and not (sub_key.endswith("-5p") or sub_key.endswith("-3p")):
-                # Create a duplicate record for each MIRNA locus with multiple miRNAs.
-                new_record = SeqRecord(
-                    seq=hp_dict[key].seq,
-                    id=seq_record.id.replace("MIR", "miR"),
-                    name=seq_record.name.replace("MIR", "miR"),
-                    description=seq_record.description.replace("MIR", "miR"),
-                    dbxrefs=seq_record.dbxrefs
-                )
-                # Add the new record to new_entries
-                new_entries[sub_key] = new_record
-                has_new_entries = True  # Mark that we've added a new entry
+                if sub_key not in hp_dict:
+                    # Print the mapping for debugging
+                    print(f"Matched miRNA: {sub_key.replace('-MIR','-miR')} -> Hairpin: {key}")
 
-        # If new entries were added, remove the original key from hp_dict
+                    # Create a new hairpin entry for the matched miRNA
+                    new_record = SeqRecord(
+                        seq=hp_dict[key].seq,
+                        id=sub_key,
+                        name=sub_key,
+                        description=f"Derived from {key}",
+                        dbxrefs=seq_record.dbxrefs )
+
+                    # Add the new record to new_entries
+                    new_entries[sub_key] = new_record
+                    # Mark that we've added a new entry
+                    has_new_entries = True  
+
+        # If new entries were added, remove the original hairpin key
         if has_new_entries:
             del hp_dict[key]
 
-    # Update hp_dict with the collected new entries
+    # Update hp_dict with the new entries
     hp_dict.update(new_entries)
-    if len(new_entries)>0:
+
+    # Print new entries for debugging
+    if new_entries:
+        print("")
+        print("The following entries were added to the hairpin file:")
+        for key, record in new_entries.items():
+            print(f"Key: {key}")
+
+    # Write updated hp_dict to FASTA file
+    if len(new_entries) > 0:
         # Specify the output FASTA file path
         output_fasta = "miRScore_adjusted_hairpins.fa"
 
@@ -77,10 +89,15 @@ def check_multiple(hp_dict,mir_dict):
                 if i < len(hp_dict) - 1:
                     output_handle.write("\n")
 
+    if os.path.exists("miRScore_adjusted_hairpins.fa"):
+        print('')
+        print("Created a new hairpin FASTA file called 'miRScore_adjusted_hairpins.fa' with " + str(len(new_entries)) + " additional hairpin sequence(s).")
+        print('')
+
 def process_mirnas(input_file, output_file):
     #Convert all U's to T's for mapping.
     subprocess.run(
-        f"cat {input_file} | sed -E '/(>)/!s/U/T/g' > {output_file}",
+        f"cat {input_file} > {output_file}",
         shell=True
     )
     
@@ -101,13 +118,10 @@ def main():
     hp_dict1 = SeqIO.index("tmp.hairpin.fa", "fasta")
     mir_dict = {key: mir_dict1[key] for key in mir_dict1}
     hp_dict = {key: hp_dict1[key] for key in hp_dict1}
+    mir_dict = {key.replace("-miR", "-MIR"): value for key, value in mir_dict.items()}
 
-    hpLen=len(hp_dict)
+    #Run hairpin check
     check_multiple(hp_dict,mir_dict)
-    newLen=len(hp_dict)
-
-    print("Created new hairpin FASTA file called 'miRScore_adjusted_hairpins.fa' with " + str(newLen-hpLen) + " additional hairpin sequence(s).")
-    print('')
 
     cmd="rm -rf tmp*"
     run(cmd)
