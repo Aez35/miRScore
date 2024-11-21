@@ -55,7 +55,7 @@ else:
 
 #print log
 print("--------")
-print("miRScore version 0.9")
+print("miRScore version 0.2.0")
 print("Options:")
 print("     'Mature file' " + args.mature)
 print("     'Hairpin file' " + args.hairpin)
