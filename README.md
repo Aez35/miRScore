@@ -131,7 +131,7 @@ miRScore has six outputs:
 * `alt_miRScore_Results.csv`: A csv file containing the results for alternative miRNA suggestions on a failed miRNA hairpin.
 * `alt_reads.csv`: A csv file containing read counts for alternative miR, miR*, and total reads mapped to hairpin in each submitted library
 * `RNAplots`: Directory containing PDF images for each miRNA secondary structure including miR(red)/miR*(green) annotation.
-* `strucVis`: Directory containing PDF images depicting miRNA secondary structure and small RNA read depth for each miRNA locus.
+* `strucVis`: Directory containing PDF images depicting miRNA secondary structure and small RNA read depth for each *MIRNA* locus.
 
 ## miRScore_Results.csv
 
@@ -151,14 +151,14 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 * `result` - Pass/Fail result of miRScore for miRNA.  
 * `flags` - Criteria that was not met by the miRNA duplex according to Axtell and Meyers (2018).  
 * `mismatch` - Number of mismatches in miRNA duplex.  
-* `mReads` - Sum of reads that map to mature miRNA locus +/- 1 position in all libraries which meet criteria. See FAQ1 for details on read counting.
-* `msReads` - Sum of reads that map to miRNA star locus +/- 1 position. See FAQ1 for details on read counting.
+* `mReads` - Sum of reads that map to mature miRNA position +/- 1 position in all libraries which meet criteria. See FAQ1 for details on read counting.
+* `msReads` - Sum of reads that map to miRNA star position +/- 1 position. See FAQ1 for details on read counting.
 * `totReads` - Total reads that map to the hairpin precursor in all libraries which meet criteria. See FAQ1 for details on read counting. Please note this does not always equal mReads + msReads. This is ALL reads that map to the hairpin.
 * `numLibraries` - Number of libraries that reads were report from for mReads, msReads, and totReads.
 * `precision` - Measure of precision of how many reads map to the miRNA duplex compared to other positions in the precursor. Found by totaling the number of reads for miR and miR*, then dividing by the sum of all reads mapped to the hairpin precursor.  *(mReads + msReads) / totReads*
 
 ### **Flags**
-Flags are reported to help the user determine what criteria a MIRNA locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a *MIRNA* locus to fail, and instead are reported to indicate to the user that the miRNA or the *MIRNA* hairpin have longer lengths and should be evaluted carefully.
+Flags are reported to help the user determine what criteria a *MIRNA* locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a *MIRNA* locus to fail, and instead are reported to indicate to the user that the miRNA or the *MIRNA* hairpin have longer lengths and should be evaluted carefully.
 
 #### List of potential flags
 * `Hairpin structure invalid` - The *MIRNA* hairpin secondary structure does not allow for the indexing of the miRNA duplex. This may be due to a large bulge or large hairpin with secondary stem loops at the duplex.
@@ -176,10 +176,10 @@ Flags are reported to help the user determine what criteria a MIRNA locus did no
 * `NA` - The miRNA meets all miRScore criteria.
 
 ## reads.csv
-A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result and flag column. A 'Pass' indicates the MIRNA locus that meets the read floor (greater than 10 reads map to MIRNA locus), has at least one read mapped to both miR and miR*, and has a precision greater than 75% in the reported library. A 'Fail' indcates one of these criteria are not met.
+A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result and flag column. A 'Pass' indicates the *MIRNA* locus that meets the read floor (greater than 10 reads map to the miRNA duplex), has at least one read mapped to both miR and miR*, and has a precision greater than 75% in the reported library. A 'Fail' indcates one of these criteria are not met.
 
 ## alt_mirna_results.csv
-When a miRNA 'fails' miRScore, meaning one or more of the criteria are not met, that locus will be reavaluated based on sequencing data. This revaluation is done using the reads mapped to the hairpin associated with the failed miRNA. miRScore will use samtools to select the most abundant read in the alignments/merged.bam file with a sequence between 20-24 nt that mapped to the failed miRNA hairpin. miRScore will then score that sequence as an alternative miRNA. Any of these alternative miRNAs that pass will be reported in alt_miRScore_Results.csv. These alternative miRNAs are not intended to be final confirmation of a miRNA locus, and should be evaluated with care.
+When a miRNA 'fails' miRScore, meaning one or more of the criteria are not met, that locus will be reavaluated based on sequencing data. This revaluation is done using the reads mapped to the hairpin associated with the failed *MIRNA* locus. miRScore will use samtools to select the most abundant read in the alignments/merged.bam file with a sequence between 20-24 nt that mapped to the failed *MIRNA* hairpin. miRScore will then score that sequence as an alternative miRNA. Any of these alternative miRNAs that pass will be reported in alt_miRScore_Results.csv. These alternative miRNAs are not intended to be final confirmation of a *MIRNA* locus, and should be evaluated with care.
 ## alt_reads.csv
 A csv file containing the reads reported in each library of the alternative miRNA, alternative miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result. A 'Pass' indicates the alternative miRNA meets the read floor and has a precision greater than 75% in that library. A 'Fail' indcates one of these criteria are not met.
 
@@ -224,10 +224,10 @@ python hairpinHelper [-help] -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa
 miRScore reports read counts for the miRNA duplex, totReads, and precision based on which sRNA-seq libraries pass or fail. If a user submits 10 libraries, and all the expression criteria are met in only 2, `mreads`, `msReads`, `totReads`, and `precision` will reflect only those 2 libraries, while the remaining 8 will not be included. Read counts for each locus in each of the 10 libraries can still be found in 'reads.csv' file. If either expression criterion is not met in any individual library, the miRNA will Fail and miRScore will report these values for all 10 libraries.
 
 ### 2. Why do some of my miRNAs have 'NA's in certain columns?
-MIRNA secondary structure plays a big role in determining many of the miRNA criteria. If the miRNA or miRNA* sequences index to the stem loop or large secondary loop, the miRNA duplex can be impossible to determine. Without this duplex, it's not possible to score a MIRNA locus. In this instance, miRScore will report only the user-provided information and report 'NA's in all other columns.
+MIRNA secondary structure plays a big role in determining many of the miRNA criteria. If the miRNA or miRNA* sequences index to the stem loop or large secondary loop, the miRNA duplex can be impossible to determine. Without this duplex, it's not possible to score a *MIRNA* locus. In this instance, miRScore will report only the user-provided information and report 'NA's in all other columns.
 
 ### 3. Why is my miRNA failing due to no reads detected, but I see reads reported in both 'mReads' and 'msReads'?
-miRscore counts reads in **individual sRNA-seq libraries**. In order for a MIRNA locus to pass, there must be reads mapping to both the miRNA and miRNA* positions **within a single library**. This is to prevent false positive validation of miRNAs with a single read in dozens of libraries that may occur if a merged library was used.
+miRscore counts reads in **individual sRNA-seq libraries**. In order for a *MIRNA* locus to pass, there must be reads mapping to both the miRNA and miRNA* positions **within a single library**. This is to prevent false positive validation of miRNAs with a single read in dozens of libraries that may occur if a merged library was used.
 
 miRScore reports three read count values in the results file: `mReads`, `msReads`, and `totReads`. `mReads` and `msReads` are counted using the reported locations of the miRNA/miRNA* on the hairpin +/- 1 position to account for variance. If no reads are detected at one or both of these positions, miRScore will flag that locus as "No mature or star reads detected". In some cases, there are reads mapping to other regions of the hairpin, but not to the miRNA duplex. If this happens, you may see `mReads` or `msReads` reported as 0 while `totReads` is greater than 0. This is because `totReads` is the total number of reads that map to the hairpin, not just the miRNA duplex.
 
@@ -235,7 +235,7 @@ In other cases, you may see "No mature or star reads detected", but `mReads` and
 
 
 ### 4. Why is the use of merged libraries not suggested?
-As stated in FAQ 3, this is to prevent false positive validation of a MIRNA locus with a single read in dozens of libraries that may occur if a merged library was used. 
+As stated in FAQ 3, this is to prevent false positive validation of a *MIRNA* locus with a single read in dozens of libraries that may occur if a merged library was used. 
 
 The use of merged libraries is not suggested because one of the primary criteria miRScore uses as validation of miRNAs is ensuring both the miRNA and miRNA* is expressed within a single library. This provides a level of confidence that the miRNA is expressed at detectable levels within the sample, and that the reads are in fact miRNA reads with the characteristic two-stack mapping pattern. In some instances, miRNAs annotated by existing sRNA annotation tools only pass when the merged library is used, as it is common practice to use merged libraries to annotate miRNAs. Please be assured that miRScore will still handle merged libraries accurately, but the miRNA and miRNA* abundance reported in the results will reflect the overall abundance and not that of individual libraries. Please see FAQ 1 on how reads are reported when multiple libraries are submitted.
 
