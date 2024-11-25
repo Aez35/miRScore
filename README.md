@@ -172,6 +172,7 @@ Flags are reported to help the user determine what criteria a MIRNA locus did no
 * `Precision less than 75%` - The precision (miR* reads + miR* reads / total reads mapped to hairpin) did not meet the required 75% in a single library.
 * `precursor > 200/300 nt` - The user provided miRNA precursor has a length greater than 200/300 nucleotides.
 * `No 2nt 3' overhang` - The user-provided star sequence did not meet the criteria for a 2nt overhang on the 3' end of the miRNA duplex.
+* `Mature not found in hairpin sequence` - The exact mature miRNA sequence was not found in the hairpin sequence.
 * `NA` - The miRNA meets all miRScore criteria.
 
 ## reads.csv
