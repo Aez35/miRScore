@@ -2,7 +2,7 @@
 
 # Description
 
-miRScore is a miRNA validation tool developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether miRNA loci are of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA, precursor sequences, and sRNA-seq data to miRScore. miRScore will then score each miRNA locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each miRNA locus.
+miRScore is a miRNA validation tool developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether *MIRNA* loci are of high confidence based on the criteria outlined in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). Users submit mature miRNA, precursor sequences, and sRNA-seq data to miRScore. miRScore will then score each miRNA locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each miRNA locus.
 
 ### **Determining what is a 'miRNA'**
 
