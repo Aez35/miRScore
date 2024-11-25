@@ -163,19 +163,15 @@ In addition to criteria outlined in Axtell and Meyers (2018), miRScore uses a re
 Flags are reported to help the user determine what criteria a MIRNA locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a MIRNA locus to fail, and instead are reported to indicate to the user that the miRNA or the miRNA precursor have longer lengths and should be evaluted carefully.
 
 #### List of potential flags
-* `hairpin structure invalid` - The miRNA hairpin secondary structure does not allow for the indexing of the miR duplex. This may be due to a large bulge or the miRNA is found too close to the start of the hairpin, not allowing for a 2nt 3' overhang of the miR*.
-* `mature structure invalid` - The mature miRNA is likely within a terminal loop structure. This causes the mature miRNA to fold back on itself and fail to meet the criteria.
+* `Hairpin structure invalid` - The *MIRNA* hairpin secondary structure does not allow for the indexing of the miRNA duplex. This may be due to a large bulge or large hairpin with secondary stem loops at the duplex.
 * `More than 5 mismatches` - More than 5 nucleotides are mismatched between the miRNA and miRNA* sequences.
 * `23/24 nt miRNA` - The miRNA/miRNA* is 23 or 24 nucleotides in length.
-* `Sequence contained characters besides U,A, T, G, or C` - One of the user-provided sequences contained letters besides A, T, G, C, or U.
 * `asymmetric bulge greater than 3` - There is an asymmetric bulge greater than 3 nucleotides in the miR duplex.
-* `miRNA not found in hairpin sequence` -The miRNA was not detected in the precursor sequence provided by the user.
-* `hairpin is less than 50 basepairs` - The user-provided hairpin sequence is less than 50 basepairs.
+* `Hairpin is less than 50 basepairs` - The user-provided hairpin sequence is less than 50 basepairs.
 * `miRNA multimaps to hairpin` - The miRNA or miRNA* provided by the user multimaps to hairpin sequence.
-* `No miR duplex reads detected` - Reads were not detected in the libraries provided for either the miR, miR*, or both.
-* `Less than 10 reads` - The miRNA locus had less than 10 combined miR/miR* reads in a single library. The miRNA does not meet the read floor.
+* `No mature or star reads detected` - Reads were not detected in the libraries provided for either mReads, msReads, or both.
+* `Less than 10 reads` - The *MIRNA* locus had less than 10 combined mature and star reads in a single library. The miRNA does not meet the read floor.
 * `Precision less than 75%` - The precision (miR* reads + miR* reads / total reads mapped to hairpin) did not meet the required 75% in a single library.
-* `No hairpin detected` -The hairpin of the miRNA could not be found in the precursor file provided by the user.
 * `precursor > 200/300 nt` - The user provided miRNA precursor has a length greater than 200/300 nucleotides.
 * `No 2nt 3' overhang` - The user-provided star sequence did not meet the criteria for a 2nt overhang on the 3' end of the miRNA duplex.
 * `NA` - The miRNA meets all miRScore criteria.
