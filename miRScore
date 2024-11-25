@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
-version = '0.3.0'
-
+version = '0.3.1'
 
 import RNA, re, pysam
 from pysam import FastaFile
@@ -1080,9 +1078,9 @@ def main():
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
-    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"Hairpin structure invalid"]
-    #Add failed miRNAs into dictionary
-
+    fails=['Hairpin is less than 50 basepairs','Mature not found in hairpin sequence','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"Hairpin structure invalid"]
+    
+    #Check failed miRNAs and add to results
     for mirfail in failed:
         if failed[mirfail] not in fails:
             hairpin = str(hp_dict[mirfail].seq).upper()
