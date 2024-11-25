@@ -433,7 +433,7 @@ def predict_alt_mirnas(mirna_dict):
 
         for x in mirna_dict:
             if mirna_dict[x][10] == "Fail":
-                if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
+                if mirna_dict[x][11] != "Hairpin structure invalid":
                     mir = str(mirna_dict[x][0])
                     hp = str(mirna_dict[x][8])
                     cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) > 19 && length($2) < 25 {{print}}' | head -n1 | awk '{{print $2}}'"
@@ -444,7 +444,7 @@ def predict_alt_mirnas(mirna_dict):
     elif args.kingdom == 'animal':
         for x in mirna_dict:
             if mirna_dict[x][10] == "Fail":
-                if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
+                if mirna_dict[x][11] != "Hairpin structure invalid":
                     mir = str(mirna_dict[x][0])
                     hp = str(mirna_dict[x][8])
                     cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) >= 19 && length($2) <= 25 {{print}}' | head -n1 | awk '{{print $2}}'"
@@ -958,7 +958,7 @@ def main():
     def generate_flags(row):
         flags = []
         if row['mReads'] <= 0 or row['msReads']<=0:
-            flags.append("No miR duplex reads detected")
+            flags.append("No mature or star reads detected")
         elif (row['mReads'] + row['msReads']<10):
             flags.append("Less than 10 reads")
         elif row['precision'] < 75:
@@ -1080,7 +1080,7 @@ def main():
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
-    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
+    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"Hairpin structure invalid"]
     #Add failed miRNAs into dictionary
 
     for mirfail in failed:
@@ -1247,7 +1247,7 @@ def main():
         run(cmd)
 
         for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
-            if mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+            if mirna_dict[x][11]!="Hairpin structure invalid":
                 #Create strucVis plots for each miRNA
                 if "Fail" in mirna_dict[x][10]:
                     hp_len=str(mirna_dict[x][9])
