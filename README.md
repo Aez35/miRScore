@@ -23,9 +23,20 @@ What constitutes a miRNA is based on several structural and quantitative charact
 miRScore verifies *MIRNA* loci using these conditions, but with some leniency for the length of the precursor. If the hairpin precursor is longer than the specified length but all other criteria are met, the locus will still pass. In addition, miRScore utilizes a read floor which requires at least 10 exact miRNA/miRNA* reads map to the miRNA duplex in at least one library. 
 
 # Installation
+miRScore can be installed through `conda` package manager from the bioconda channel, or through manual set up.
 
-## Dependencies
-All dependencies can be install through `conda`. To install and set up `conda`, follow the instructions at https://bioconda.github.io
+
+## Installing using conda - Mac/Linux environment
+First install conda. Once installed, you can create and activate an environment for miRScore using the following commands:
+
+```
+conda create -n mirscore miRScore
+conda activate mirscore
+```
+## Installing manually
+
+### Dependencies
+The following packages are required to run miRScore V0.3.0. Create an environment with the following packages:
 
 `python` >=3.6 https://www.python.org  
 `biopython` https://biopython.org/  
@@ -37,39 +48,9 @@ All dependencies can be install through `conda`. To install and set up `conda`, 
 `pandas`>=2.0.0 https://pandas.pydata.org/  
 `cutadapt`>=4.8 https://cutadapt.readthedocs.io/en/stable/guide.html
 `strucVis`>=0.8
-### Create Conda environment on Mac/Linux environment
 
-```
-conda create --name miRScore python viennarna pysam bowtie pandas biopython samtools tqdm strucvis cutadapt
-```
+Download miRScore script from the GitHub repo. miRScore can be run using python by placing the script in your working directory. You can make the script executable using `chmod +x miRScore` and copying it to your environment's PATH.
 
-
-## miRScore installation
-
-miRScore is run through the python script `miRScore`. To install miRScore, download the file `miRScore` from github page https://github.com/Aez35/miRScore.
-
-miRScore can be made executable by doing the following:
-
-Place the `miRScore` script in your conda environment. To locate this loaction, use the following command:
-```
-conda info --envs
-```
-
-You may make `miRScore` executable and place in the bin directory of your miRScore conda environment:
-```
-chmod +x miRScore
-mv miRScore /Users/zvaricka/miniconda3/envs/miRScore/bin
-```
-
-## Required
-
-miRScore requires two FASTA files and multiple small RNA-seq libraries in order to run.   
-
-* `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
-* `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `-fastq fastqfiles`:  Small RNA-seq libraries in FASTQ format. If libraries are untrimmed, you must use option '-autotrim' to trim libraries. You may supply a key for trimming using option '-trimkey'. Default trimkey is ATH-miR166a for plants and HSA-let-7a for animals. Ideally, all FASTQ files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this may cause issues with read counting. It is recommended to avoid the use of merged libraries when possible to ensure highest confidence in miRNA validation. See FAQ for more details.
-
-**Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-MIR173)! This is not case sensitive.**
 
 # Usage
 
@@ -103,6 +84,15 @@ Bowtie has been configured to run the following options.
 
 Rather than mapping to a genome, miRScore uses Bowtie to map each read to the *MIRNA* hairpin.
 
+## Required
+
+miRScore requires two FASTA files and small RNA-seq libraries in FASTQ format in order to run.   
+
+* `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
+* `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
+* `-fastq fastqfiles`:  Small RNA-seq libraries in FASTQ format. If libraries are untrimmed, you must use option '-autotrim' to trim libraries. You may supply a key for trimming using option '-trimkey'. Default trimkey is ATH-miR166a for plants and HSA-let-7a for animals. Ideally, all FASTQ files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this may cause issues with read counting. It is recommended to avoid the use of merged libraries when possible to ensure highest confidence in miRNA validation. See FAQ for more details.
+
+**Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-MIR173)! This is not case sensitive.**
 
 # Example
 
