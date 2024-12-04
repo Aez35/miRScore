@@ -1,4 +1,5 @@
-# miRScore
+<img width="350" alt="Screenshot 2024-12-04 at 1 45 24 PM" src="https://github.com/user-attachments/assets/afa29e9f-83bb-4caf-bef8-fc1f39924c60">
+
 
 # Description
 
