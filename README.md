@@ -47,8 +47,8 @@ The following packages are required to run miRScore V0.3.0. Create an environmen
 `pysam` >=0.21.0 https://pysam.readthedocs.io/en/latest/api.html  
 `tqdm` >=4.65 https://pypi.org/project/tqdm/  
 `pandas`>=2.0.0 https://pandas.pydata.org/  
-`cutadapt`>=4.8 https://cutadapt.readthedocs.io/en/stable/guide.html
-`strucVis`>=0.8
+`cutadapt`>=4.8 https://cutadapt.readthedocs.io/en/stable/guide.html  
+`strucVis`>=0.8 https://anaconda.org/bioconda/strucvis
 
 Download miRScore script from the GitHub repo. miRScore can be run using python by placing the script in your working directory. You can make the script executable using `chmod +x miRScore` and copying it to your environment's PATH.
 
