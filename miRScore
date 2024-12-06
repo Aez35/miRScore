@@ -691,91 +691,7 @@ def generate_options(hp):
         options = [base_name + suffix for suffix in suffixes]
         star_options = [base_name + suffix for suffix in star_suffixes]
         return options, star_options
-    
-def add_legend_rnaplot_pass(mirna_dict, input_dir="RNAplots/passed", output_dir="RNAplots/passed"):
-    """
-    Adds legends to RNAplot EPS files and converts them to PDF.
-    """
-    # Get all .fa files in the input directory
-    files = glob.glob(f"{input_dir}/*.fa")
 
-    # Add legends to each RNAplot EPS file
-    for file in files:
-        x = Path(file).stem
-        mstart = int(mirna_dict[x][2])
-        mstop = int(mirna_dict[x][3])
-        mirstart = int(mirna_dict[x][6])
-        mirstop = int(mirna_dict[x][7])
-        
-        # Construct the command to add legend
-        eps_file = f"{input_dir}/{x}_ss.eps"
-        output_eps = f"{output_dir}/{x}_plot.eps"
-        
-        cmd = (
-            f"awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n"
-            f"9 scalefont setfont \\n72 114 moveto \\n(miRNA: {x} ) show' "
-            f"'NR == n {{print s}} {{print}}' {eps_file} | "
-            f"awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n"
-            f"72 104 moveto \\n(miRNA locus: {mstart}-{mstop}) show \\n"
-            f"/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n"
-            f"(miRNAStar locus: {mirstart}-{mirstop}) show \\n"
-            f"0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n"
-            f"1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' "
-            f"'NR==n {{print s}} {{print}}' > {output_eps}"
-        )
-        os.system(cmd)
-
-    # Convert EPS files to PDF
-    convert_eps_to_pdf(output_dir)
-
-def add_legend_rnaplot_fail(mirna_dict, input_dir="RNAplots/failed", output_dir="RNAplots/failed"):
-    """
-    Adds legends to RNAplot EPS files and converts them to PDF.
-    """
-    # Get all .fa files in the input directory
-    files = glob.glob(f"{input_dir}/*.fa")
-
-    # Add legends to each RNAplot EPS file
-    for file in files:
-        x = Path(file).stem
-        mstart = int(mirna_dict[x][2])
-        mstop = int(mirna_dict[x][3])
-        mirstart = int(mirna_dict[x][6])
-        mirstop = int(mirna_dict[x][7])
-        
-        # Construct the command to add legend
-        eps_file = f"{input_dir}/{x}_ss.eps"
-        output_eps = f"{output_dir}/{x}_plot.eps"
-        
-        cmd = (
-            f"awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n"
-            f"9 scalefont setfont \\n72 114 moveto \\n(miRNA: {x} ) show' "
-            f"'NR == n {{print s}} {{print}}' {eps_file} | "
-            f"awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n"
-            f"72 104 moveto \\n(miRNA locus: {mstart}-{mstop}) show \\n"
-            f"/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n"
-            f"(miRNAStar locus: {mirstart}-{mirstop}) show \\n"
-            f"0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n"
-            f"1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' "
-            f"'NR==n {{print s}} {{print}}' > {output_eps}"
-        )
-        os.system(cmd)
-
-    # Convert EPS files to PDF
-    convert_eps_to_pdf(output_dir)
-
-def convert_eps_to_pdf(directory):
-    """
-    Converts all EPS files in a directory to PDF format.
-    """
-    ps_files = glob.glob(os.path.join(directory, '*_plot.eps'))
-
-    for ps_file in ps_files:
-        pdf_file = ps_file.replace('.eps', '.pdf')
-        
-        # Command to convert EPS to PDF using Ghostscript
-        cmd = f"ps2pdf {ps_file} {pdf_file}"
-        os.system(cmd)
 
 def cleanup_directories():
     """
@@ -791,8 +707,8 @@ def cleanup_directories():
         "tmp*",
         "alignments/*bai",
         "ms_fastqs/",
-        "RNAplots/passed/*plot.eps",
-        "RNAplots/failed/*plot.eps",
+        "RNAplots/passed/*_plot.ps",
+        "RNAplots/failed/*_plot.ps",
         "RNAplots/passed/*ss.ps*",
         "RNAplots/failed/*ss.ps*"
     ]
@@ -1544,10 +1460,44 @@ def main():
 
 
     #Add legend to passed RNAplots
-    add_legend_rnaplot_pass(mirna_dict)
-
     #Add legend to failed RNAplots
-    add_legend_rnaplot_fail(mirna_dict)
+    files=glob.glob("RNAplots/failed/*.fa")
+    for file in files:
+        x=Path(file).stem
+        mstart=int(mirna_dict[x][2])
+        mstop=int(mirna_dict[x][3])
+        mirstart=int(mirna_dict[x][6])
+        mirstop=int(mirna_dict[x][7])
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.eps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
+        run(cmd)
+
+    #Add legend to passed RNAplots
+    files=glob.glob("RNAplots/passed/*.fa")
+    for file in files:
+        x=Path(file).stem
+        mstart=int(mirna_dict[x][2])
+        mstop=int(mirna_dict[x][3])
+        mirstart=int(mirna_dict[x][6])
+        mirstop=int(mirna_dict[x][7])
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/passed/"+x+"_ss.eps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/passed/"+x+"_plot.ps"
+        run(cmd)
+
+    ps_files = glob.glob(os.path.join('RNAplots/passed/', '*_plot.ps'))
+    # Loop through each file and convert it to PDF
+    for ps_file in ps_files:
+        # Construct the PDF file name
+        pdf_file = ps_file.replace('.ps', '.pdf')     
+        # Ghostscript command to convert PS to PDF
+        cmd=("ps2pdf "+ ps_file + " " + pdf_file)
+        run(cmd)
+
+    ps_files = glob.glob(os.path.join('RNAplots/failed/', '*_plot.ps'))
+    # Loop through each file and convert it to PDF
+    for ps_file in ps_files:
+        # Construct the PDF file name
+        pdf_file = ps_file.replace('.ps', '.pdf')
+        cmd=("ps2pdf "+ ps_file + " " + pdf_file)
+        run(cmd)
 
 
 #Remove unecessary files and move to output directory
