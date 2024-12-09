@@ -536,7 +536,7 @@ def align_fastqs(args, fastqs):
                         "-a", mismatch_option, 
                         "--no-unal", "--norc", 
                         '-x', 'hairpin', '-',  # Use "-" to pipe stdin
-                        "-S", f"alignments/{Path(file).stem}.bam"
+                        "-S", f"alignments/{Path(file).with_suffix('').stem}.bam"
                     ],
                     stdin=fastq_file,
                     stdout=subprocess.DEVNULL,
@@ -556,7 +556,65 @@ def align_fastqs(args, fastqs):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT
             )
-            
+
+def process_fastqs(fastqs, keydna, args):
+    for fastq in tqdm.tqdm(fastqs, desc="Library trimming", disable=None):
+        # Check if the file exists
+        if not os.path.exists(fastq):
+            sys.exit(f"Error: File {fastq} does not exist. Please check the path.")
+
+        # Handle zipped FASTQ files
+        if fastq.endswith(".gz"):
+            # Extract adapter sequence from gzipped FASTQ
+            cmd = (
+                f"gzip -dc {fastq} | awk -v target='{keydna}' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' | "
+                "uniq -c | sort -nr | head -n1 | awk '{print $2}'"
+            )
+        else:
+            # Extract adapter sequence from unzipped FASTQ
+            cmd = (
+                f"awk -v target='{keydna}' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' {fastq} | "
+                "uniq -c | sort -nr | head -n1 | awk '{print $2}'"
+            )
+
+        # Run command to find adapter
+        try:
+            output = subprocess.check_output(cmd, shell=True, text=True).strip()
+        except subprocess.CalledProcessError as e:
+            sys.exit(f"Error while processing {fastq}: {e.output}")
+
+        print(output)
+
+        # Exit if no adapter detected
+        if "G" not in output:
+            sys.exit("No adapter detected. Please check input libraries are not already trimmed.")
+
+        print(f"Trimming {fastq}...")
+        print(f"Adapter detected: {output}")
+
+        # Prepare trimmed output filename
+        head, tail = os.path.split(fastq)
+        tfile = os.path.join('trimmedLibraries', f"t_{tail}")
+
+        # Use cutadapt to trim
+        if fastq.endswith(".gz"):
+            # For gzipped files
+            cmd = (
+                f"gzip -dc {fastq} | cutadapt -j {args.threads} -a {output} -o {tfile} -m 12 --report minimal -"
+            )
+        else:
+            # For unzipped files
+            cmd = (
+                f"cutadapt -j {args.threads} -a {output} -o {tfile} -m 12 --report minimal {fastq}"
+            )
+
+        # Run the trimming command
+        try:
+            run(cmd)
+        except Exception as e:
+            sys.exit(f"Error trimming {fastq}: {e}")
+
+
 def get_counts(bam, x, start_indx=None, stop_indx=None):
     if start_indx is None or stop_indx is None:
         command = f"samtools view -r {Path(bam).stem} -F 16 alignments/merged.bam {x} | wc -l"
@@ -1026,43 +1084,14 @@ def main():
             if (len(key) < 20) or (len(key) > 30):
                 sys.exit("Trim key must be between 20 and 30 letters")
 
-            for fastq in tqdm.tqdm(fastqs, desc="Library trimming",disable=None):
-                cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
-                output = subprocess.check_output(cmd, shell=True, text=True).strip()
-                print(output)
-                if "G" not in output:
-                    sys.exit("No adapter detected. Please check input libraries need trimming.")
-                print("Trimming "+ fastq + "...")
-                print('Adapter detected: ' + output)
-                (head, tail) = os.path.split(fastq)
-                tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -j '+ str(args.threads) + ' -a '+ output + ' -o '+ tfile + ' -m 12 --report minimal ' +fastq
-                run(cmd)
+            process_fastqs(fastqs, keydna, args)
+
             print("Adapter trimming complete.")
             modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
             print(modified_fastqs)
             align_fastqs(args,modified_fastqs)
         else:
             align_fastqs(args,fastqs)
-            #if args.kingdom == 'plant':
-                #ath-miR166a
-             #   print("No key provided for trimming.")
-              #  key="UCGGACCAGGCUUCAUUCCCC"
-               # print("-trimkey used for discovering adapter sequence: "+key)
-            #else:
-                #hsa-let7a
-             #   print("No key provided for trimming.")
-              #  key="UGAGGUAGUAGGUUGUAUAGUU"
-               # print("-trimkey used for discovering adapter sequence: " + key)
-                #key=key.upper()
-             #   keydna=key.translate(str.maketrans("uU", "tT"))
-            #for fastq in fastqs:
-            #    cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
-            #    output = subprocess.check_output(cmd, shell=True, text=True).strip()
-            #if output == '':
-            #    align_fastqs(args,fastqs)
-            #else:
-            #    sys.exit("Fastq files need to be trimmed. Please rerun with option -autotrim.")
 
     bamfiles=glob.glob('alignments/*.bam')
     #Sort bam files
@@ -1526,3 +1555,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
