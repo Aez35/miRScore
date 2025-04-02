@@ -81,8 +81,10 @@ miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRP
 Bowtie has been configured to run the following options.
 
 - a, Report all valid alignments
-- v, Allow 0 or 1 mismatch depending on option 'mm'.
-
+- v, Allow 0 or 1 mismatch depending on option 'mm'
+--no-unal, No unaligned reads reported
+--norc, No reverse reads reported, due to reads being aligned to a single stranded hairpin and not a genome
+  
 Rather than mapping to a genome, miRScore uses Bowtie to map each read to the *MIRNA* hairpin.
 
 ## Required
