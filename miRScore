@@ -1,9 +1,7 @@
 #!/usr/bin/env python
+version = '0.3.3'
 
-version = '0.2.2'
-
-
-import RNA, re, pysam
+import RNA, re, pysam, gzip
 from pysam import FastaFile
 import argparse, shutil, subprocess
 from subprocess import Popen, PIPE, STDOUT
@@ -79,7 +77,7 @@ print("--------")
 if args.fastq is not None:
     fastqs=list(args.fastq)
     for f in fastqs:
-        if f.lower().endswith(('.fastq','.fq'))!=True:
+        if f.lower().endswith(('.fastq','.fq','.fastq.gz'))!=True:
             msg = (f + " is not a fastq. Please revise input.")
             sys.exit(msg)
 
@@ -113,19 +111,89 @@ def run(cmd) :
     proc = subprocess.call(cmd, shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 def add_values_in_dict(dict, key, list_of_values):
+    """
+    Add a list of values to a dictionary under a specific key. If the key does not exist, it is created.
+
+    Parameters:
+        target_dict (dict): The dictionary to update.
+        key (str): The key under which to add values.
+        values (list): List of values to add.
+
+    Returns:
+        dict: The updated dictionary.
+    """
     if key not in dict:
         dict[key] = list()
     dict[key].extend(list_of_values)
     return dict
 
 def process_mirnas(input_file, output_file):
+    """
+    Process an input file containing miRNA sequences by converting 'U' to 'T' in sequences
+    and saving the output to a specified file.
+
+    Parameters:
+        input_file (str): Path to the input file.
+        output_file (str): Path to the output file.
+    """
 # Execute the shell command using subprocess
     subprocess.run(
         f"cat ../{input_file} | sed -E '/(>)/!s/U/T/g' > {output_file}",
         shell=True
     )
 
+def run_rnaplot(x, seq, mstart, mstop, mirstart, mirstop, status):
+    """
+    Add a list of values to a dictionary under a specific key. If the key does not exist, it is created.
+
+    Parameters:
+        x (str): MIRNA name
+        seq (str): hairpin sequence
+        mstart (int): start position of mature miRNA on hairpin
+        mstop (int): stop position of mature miRNA on hairpin
+        mirstart (int): start position of star miRNA on hairpin
+        mirstop (int): stop position of star miRNA on hairpin
+        status (str): pass or fail result from miRScore scoring step
+
+    Returns:
+        PS file: post script file of RNAplot from viennaRNA
+    """
+    # Determine the working directory based on status
+    work_dir = "failed" if "Fail" in status else "passed"
+    
+    # Change to the appropriate directory
+    os.makedirs(work_dir, exist_ok=True)  # Ensure the directory exists
+    os.chdir(work_dir)
+
+    # Write the sequence to a fasta file
+    fasta_file = f"{x}.fa"
+    with open(fasta_file, "w") as f:
+        f.write(f"> {x}\n{seq}")
+
+    # Construct the RNAfold and RNAplot command
+    command = (
+        f"RNAfold {fasta_file} | RNAplot --pre '"
+        f"{mstart} {mstop} 8 1 0.5 0 omark "
+        f"{mirstart} {mirstop} 8 0 0.5 1 omark'"
+    )
+    
+    # Execute the command
+    subprocess.Popen(command, shell=True)
+
+    # Return to the parent directory
+    os.chdir('..')
+
+
 def DNAcheck(dna):
+    """
+    Check whether a DNA/RNA sequence contains only valid nucleotides (A, T, G, C, U).
+
+    Parameters:
+        sequence (str): DNA/RNA sequence to validate.
+
+    Returns:
+        int: 2 if the sequence is valid, 1 otherwise.
+    """
 #Check that all characters in provided sequences are ATGCU
     y = dna.upper()
     if re.match("^[ATGCU]+$", y):
@@ -134,6 +202,12 @@ def DNAcheck(dna):
         return(1)
 
 def index_of(asym, in_list):
+    """
+    Find the index of an asymmetry in a hairpin. If the asym is not present, return -1.
+
+    Returns:
+        int: Index of the asym if found, otherwise -1.
+    """
 #Determine asymmetry in mir complex
     try:
         return in_list.index(asym)
@@ -141,6 +215,20 @@ def index_of(asym, in_list):
         return -1
 
 def score_animal(mature,star,hp,ss,maturepos,starpos):
+    """
+    Score candidate mature miRNA based on criteria outlined in Axtell and Meyers et al. 2018.
+
+    Parameters:
+        mature (str): Mature miRNA sequence.
+        star (str): miRNA* (star) sequence.
+        hp (str): Hairpin precursor sequence.
+        ss (str): Secondary structure in dot-bracket notation.
+        maturepos (list): Start and end positions of the mature miRNA.
+        starpos (list): Start and end positions of the star miRNA.
+
+    Returns:
+        tuple: A list of scores, reasons for deductions, and evaluation criteria.
+    """
 #Determine score of candidate matureNA based on criteria outlined in Axtell and Meyers et al 2018.
     reason=[]
     mscore =[]
@@ -252,6 +340,20 @@ def score_animal(mature,star,hp,ss,maturepos,starpos):
     return mscore, reason, criteria
 
 def score_plant(mature,star,hp,ss,maturepos,starpos):
+    """
+    Score candidate mature miRNA based on criteria outlined in Axtell and Meyers et al. 2018.
+
+    Parameters:
+        mature (str): Mature miRNA sequence.
+        star (str): miRNA* (star) sequence.
+        hp (str): Hairpin precursor sequence.
+        ss (str): Secondary structure in dot-bracket notation.
+        mature_pos (list): Start and end positions of the mature miRNA.
+        star_pos (list): Start and end positions of the star miRNA.
+
+    Returns:
+        tuple: A list of scores, reasons for deductions, and evaluation criteria.
+    """
 #Determine score of candidate matureNA based on criteria outlined in Axtell and Meyers et al 2018.
     reason=[]
     mscore =[]
@@ -402,20 +504,116 @@ def get_pairs(dotbracket):
     return pairs
 
 def align_fastqs(args, fastqs):
-#Build index and map hairpins to fastq files
+    """
+    Align FASTQ file(s) to hairpin sequences and output alignments in BAM format.
+
+    Parameters:
+        FASTQ (str): Path to the FASTQ file(s).
+
+    Returns:
+        BAM (file): Alignment file containing reads mapped to hairpin sequences.
+    """
+    # Build index and map hairpins to fastq files
     print('')
     print("Building index...")
-    #Create index of hairpins using bowtie
-    subprocess.call(['bowtie-build', 'tmp.hairpin.fa', 'hairpin'],stdout=DEVNULL,stderr=subprocess.STDOUT)
-    #Map reads to hairpin
-    print("Mapping each fastq file to hairpin...")
+    # Create index of hairpins using bowtie
+    subprocess.call(['bowtie-build', 'tmp.hairpin.fa', 'hairpin'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    
+    # Map reads to hairpin
+    print("Mapping each FASTQ file to hairpin...")
     for file in fastqs:
-        if args.mm != None:
-            print("Mapping " + file + "with one mismatch...")
-            subprocess.call(['bowtie', "-p", str(args.threads), "-a","-v1","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+        # Determine the mismatch option
+        mismatch_option = "-v1" if args.mm else "-v0"
+        
+        # Check if the file is compressed
+        if file.endswith('.gz'):
+            print(f"Mapping {file} (compressed) with mismatch option {mismatch_option}...")
+            with gzip.open(file, 'rt') as fastq_file:
+                subprocess.call(
+                    [
+                        'bowtie', 
+                        "-p", str(args.threads), 
+                        "-a", mismatch_option, 
+                        "--no-unal", "--norc", 
+                        '-x', 'hairpin', '-',  # Use "-" to pipe stdin
+                        "-S", f"alignments/{Path(file).with_suffix('').stem}.bam"
+                    ],
+                    stdin=fastq_file,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT
+                )
         else:
-            print("Mapping " + file + "...")
-            subprocess.call(['bowtie', "-p", str(args.threads), "-a","-v0","--no-unal", "--norc", '-x','hairpin', file , "-S", "alignments/" + Path(file).stem + ".bam"],stdout=DEVNULL,stderr=subprocess.STDOUT)
+            print(f"Mapping {file} (uncompressed) with mismatch option {mismatch_option}...")
+            subprocess.call(
+                [
+                    'bowtie', 
+                    "-p", str(args.threads), 
+                    "-a", mismatch_option, 
+                    "--no-unal", "--norc", 
+                    '-x', 'hairpin', file, 
+                    "-S", f"alignments/{Path(file).stem}.bam"
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT
+            )
+
+def process_fastqs(fastqs, keydna, args):
+    for fastq in tqdm.tqdm(fastqs, desc="Library trimming", disable=None):
+        # Check if the file exists
+        if not os.path.exists(fastq):
+            sys.exit(f"Error: File {fastq} does not exist. Please check the path.")
+
+        # Handle zipped FASTQ files
+        if fastq.endswith(".gz"):
+            # Extract adapter sequence from gzipped FASTQ
+            cmd = (
+                f"gzip -dc {fastq} | awk -v target='{keydna}' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' | "
+                "uniq -c | sort -nr | head -n1 | awk '{print $2}'"
+            )
+        else:
+            # Extract adapter sequence from unzipped FASTQ
+            cmd = (
+                f"awk -v target='{keydna}' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' {fastq} | "
+                "uniq -c | sort -nr | head -n1 | awk '{print $2}'"
+            )
+
+        # Run command to find adapter
+        try:
+            output = subprocess.check_output(cmd, shell=True, text=True).strip()
+        except subprocess.CalledProcessError as e:
+            sys.exit(f"Error while processing {fastq}: {e.output}")
+
+        print(output)
+
+        # Exit if no adapter detected
+        if "G" not in output:
+            sys.exit("No adapter detected. Please check input libraries are not already trimmed.")
+
+        print(f"Trimming {fastq}...")
+        print(f"Adapter detected: {output}")
+
+        # Prepare trimmed output filename
+        head, tail = os.path.split(fastq)
+        tfile = os.path.join('trimmedLibraries', f"t_{tail}")
+
+        # Use cutadapt to trim
+        if fastq.endswith(".gz"):
+            # For gzipped files
+            cmd = (
+                f"gzip -dc {fastq} | cutadapt -j {args.threads} -a {output} -o {tfile} -m 12 --report minimal -"
+            )
+        else:
+            # For unzipped files
+            cmd = (
+                f"cutadapt -j {args.threads} -a {output} -o {tfile} -m 12 --report minimal {fastq}"
+            )
+
+        # Run the trimming command
+        try:
+            run(cmd)
+        except Exception as e:
+            sys.exit(f"Error trimming {fastq}: {e}")
+
 
 def get_counts(bam, x, start_indx=None, stop_indx=None):
     if start_indx is None or stop_indx is None:
@@ -433,7 +631,7 @@ def predict_alt_mirnas(mirna_dict):
 
         for x in mirna_dict:
             if mirna_dict[x][10] == "Fail":
-                if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
+                if mirna_dict[x][11] != "Hairpin structure invalid":
                     mir = str(mirna_dict[x][0])
                     hp = str(mirna_dict[x][8])
                     cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) > 19 && length($2) < 25 {{print}}' | head -n1 | awk '{{print $2}}'"
@@ -444,7 +642,7 @@ def predict_alt_mirnas(mirna_dict):
     elif args.kingdom == 'animal':
         for x in mirna_dict:
             if mirna_dict[x][10] == "Fail":
-                if mirna_dict[x][11] != "No hairpin sequence detected" and mirna_dict[x][11] != "Hairpin structure invalid":
+                if mirna_dict[x][11] != "Hairpin structure invalid":
                     mir = str(mirna_dict[x][0])
                     hp = str(mirna_dict[x][8])
                     cmd = f"samtools view -@ {args.threads} -F 16 alignments/merged.bam {x} | awk -F '\t' '{{print $10}}' | sort | uniq -c | sort -nr | awk 'length($2) >= 19 && length($2) <= 25 {{print}}' | head -n1 | awk '{{print $2}}'"
@@ -454,6 +652,16 @@ def predict_alt_mirnas(mirna_dict):
         return alt_mirnas
 
 def score_alternative_mirnas(alt_mrnas, hp_dict):
+    """
+    Score alternative miRNAs by evaluating their position, secondary structure, and other criteria.
+
+    Parameters:
+        alt_mirnas (dict): Dictionary of alternative miRNAs.
+        hp_dict (dict): Dictionary of hairpin sequences.
+
+    Returns:
+        dict: Dictionary containing scores and attributes for alternative miRNAs.
+    """
     pred_dict = {}
 
     for x in tqdm.tqdm(alt_mrnas, desc="Scoring alternative miRNAs", disable=None):
@@ -500,15 +708,24 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
     return pred_dict
 
 def generate_options(hp):
+    """
+    Generate naming options for miRNA and miRNA* based on the input hairpin name (hp).
+
+    Parameters:
+        hp (str): Hairpin name.
+
+    Returns:
+        tuple: Two lists containing options for the miRNA and miRNA* (star) respectively.
+    """
     if args.kingdom == "plant":
         if re.match(r'^\w+-\w+-\w+', hp):
             base_name = "-".join(hp.split("-")[:-1])  # Extract all elements before the last hyphen
             suffix_name = hp.split("-")[-1]  # Extract the last element after the last hyphen
-            suffixes = ["", "-5p", "-" + suffix_name, "-" + suffix_name + "-5p", ".mature",'-3p','-' + suffix_name + '-3p']
+            suffixes = ["","-5p","-3p","-" + suffix_name,"-" + suffix_name + "-5p","-" + suffix_name + "-3p",".mature",".1",".2",".3",".4"]
             star_suffixes = ["-3p", "-" + suffix_name + "-3p", ".star", "*"]
         else:
             base_name = hp
-            suffixes = ["", "-5p", ".mature",'-3p']
+            suffixes = ["","-5p","-3p",".mature",".1",".2",".3",".4"]
             star_suffixes = ["-3p", ".star", "*"]
         options = [base_name + suffix for suffix in suffixes]
         star_options = [base_name + suffix for suffix in star_suffixes]
@@ -533,6 +750,30 @@ def generate_options(hp):
         star_options = [base_name + suffix for suffix in star_suffixes]
         return options, star_options
 
+
+def cleanup_directories():
+    """
+    Removes temporary and intermediate files from various directories.
+    """
+    paths_to_remove = [
+        "RNAplots/passed/*ss.eps*",
+        "RNAplots/failed/*ss.eps*",
+        "RNAplots/passed/*.fa",
+        "RNAplots/failed/*.fa",
+        "*.ebwt",
+        "*.fai",
+        "tmp*",
+        "alignments/*bai",
+        "ms_fastqs/",
+        "RNAplots/passed/*_plot.ps",
+        "RNAplots/failed/*_plot.ps",
+        "RNAplots/passed/*ss.ps*",
+        "RNAplots/failed/*ss.ps*"
+    ]
+
+    for path in paths_to_remove:
+        cmd = f"rm -rf {path}"
+        os.system(cmd)
 ### _______________________ Code begins __________________________ ###
 
 def main():
@@ -669,7 +910,10 @@ def main():
                     else:
                         og_star= None
                         starpos=get_s_rels(maturestart,maturestop,ss)
-                        star=hairpin[(starpos[0]-1):starpos[1]].upper()
+                        if starpos is None or starpos[0] is None or starpos[1] is None:
+                            failed[og_hp]="Hairpin structure invalid"
+                        else:
+                            star=hairpin[(starpos[0]-1):starpos[1]].upper()
 
                 else:
                     starpos=get_s_rels(maturestart,maturestop,ss)
@@ -843,43 +1087,14 @@ def main():
             if (len(key) < 20) or (len(key) > 30):
                 sys.exit("Trim key must be between 20 and 30 letters")
 
-            for fastq in tqdm.tqdm(fastqs, desc="Library trimming",disable=None):
-                cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
-                output = subprocess.check_output(cmd, shell=True, text=True).strip()
-                print(output)
-                if "G" not in output:
-                    sys.exit("No adapter detected. Please check input libraries need trimming.")
-                print("Trimming "+ fastq + "...")
-                print('Adapter detected: ' + output)
-                (head, tail) = os.path.split(fastq)
-                tfile='trimmedLibraries/t_'+tail
-                cmd='cutadapt -j '+ str(args.threads) + ' -a '+ output + ' -o '+ tfile + ' -m 12 --report minimal ' +fastq
-                run(cmd)
+            process_fastqs(fastqs, keydna, args)
+
             print("Adapter trimming complete.")
             modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
             print(modified_fastqs)
             align_fastqs(args,modified_fastqs)
         else:
             align_fastqs(args,fastqs)
-            #if args.kingdom == 'plant':
-                #ath-miR166a
-             #   print("No key provided for trimming.")
-              #  key="UCGGACCAGGCUUCAUUCCCC"
-               # print("-trimkey used for discovering adapter sequence: "+key)
-            #else:
-                #hsa-let7a
-             #   print("No key provided for trimming.")
-              #  key="UGAGGUAGUAGGUUGUAUAGUU"
-               # print("-trimkey used for discovering adapter sequence: " + key)
-                #key=key.upper()
-             #   keydna=key.translate(str.maketrans("uU", "tT"))
-            #for fastq in fastqs:
-            #    cmd = f"awk -v target='"+keydna+ "' '{{idx = index($0, target); if (idx) print substr($0, idx + length(target),20)}}' "+ fastq +" | uniq -c | sort -nr | head -n1 | awk '{{print $2}}'"
-            #    output = subprocess.check_output(cmd, shell=True, text=True).strip()
-            #if output == '':
-            #    align_fastqs(args,fastqs)
-            #else:
-            #    sys.exit("Fastq files need to be trimmed. Please rerun with option -autotrim.")
 
     bamfiles=glob.glob('alignments/*.bam')
     #Sort bam files
@@ -958,7 +1173,7 @@ def main():
     def generate_flags(row):
         flags = []
         if row['mReads'] <= 0 or row['msReads']<=0:
-            flags.append("No miR duplex reads detected")
+            flags.append("No mature or star reads detected")
         elif (row['mReads'] + row['msReads']<10):
             flags.append("Less than 10 reads")
         elif row['precision'] < 75:
@@ -1080,9 +1295,9 @@ def main():
                         mirna_dict[x][11]+=";Less than 10 reads"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
-    fails=['Hairpin is less than 50 basepairs','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"No hairpin sequence detected","Hairpin structure invalid"]
-    #Add failed miRNAs into dictionary
-
+    fails=['Hairpin is less than 50 basepairs','Mature not found in hairpin sequence','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"Hairpin structure invalid"]
+    
+    #Check failed miRNAs and add to results
     for mirfail in failed:
         if failed[mirfail] not in fails:
             hairpin = str(hp_dict[mirfail].seq).upper()
@@ -1247,7 +1462,7 @@ def main():
         run(cmd)
 
         for x in tqdm.tqdm(mirna_dict,desc="strucVis",disable=None):
-            if mirna_dict[x][11]!="No hairpin sequence detected" and mirna_dict[x][11]!="Hairpin structure invalid":
+            if mirna_dict[x][11]!="Hairpin structure invalid":
                 #Create strucVis plots for each miRNA
                 if "Fail" in mirna_dict[x][10]:
                     hp_len=str(mirna_dict[x][9])
@@ -1261,33 +1476,32 @@ def main():
 
     #Create RNAplots depicting MIRNA loci
     os.chdir('RNAplots')
-    for x in tqdm.tqdm(mirna_dict,desc="RNAplots",disable=None):
+    # Main loop to process the miRNA dictionary
+    for x in tqdm.tqdm(mirna_dict, desc="RNAplots", disable=None):
         if mirna_dict[x][11] not in fails:
-                seq = str(mirna_dict[x][8])
-                #mature sequence
-                mstart=int(mirna_dict[x][2])
-                mstop=int(mirna_dict[x][3])
-                mirstart=int(mirna_dict[x][6])
-                mirstop=int(mirna_dict[x][7])
-                #Create ps file from RNAplot
-                if "Fail" in mirna_dict[x][10]:
-                    os.chdir("failed")
-                    f= open(x+".fa", "a")
-                    f.write("> " + str(x) + '\n' + seq)
-                    f.close()
-                    command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 1 0.5 0 omark " + str(mirstart) + " " + str(mirstop) + " 8 0 0.5 1 omark'")
-                    subprocess.Popen(command, shell=True)
-                    os.chdir('..')                
-                else:
-                    os.chdir("passed")
-                    f= open(x+".fa", "a")
-                    f.write("> " + str(x) + '\n' + seq)
-                    f.close()
-                    command=("RNAfold " + x+ ".fa | RNAplot --pre '" + str(mstart)+ " " + str(mstop) + " 8 1 0.5 0 omark " + str(mirstart) + " " + str(mirstop) + " 8 0 0.5 1 omark'")
-                    subprocess.Popen(command, shell=True)
-                    os.chdir('..')                
+            seq = str(mirna_dict[x][8])  # Full sequence
+            mstart = int(mirna_dict[x][2])  # Mature start position
+            mstop = int(mirna_dict[x][3])   # Mature stop position
+            mirstart = int(mirna_dict[x][6])  # Mature* start position
+            mirstop = int(mirna_dict[x][7])   # Mature* stop position
+            status = mirna_dict[x][10]  # Pass or Fail status
+            
+            # Process the miRNA
+            run_rnaplot(x, seq, mstart, mstop, mirstart, mirstop, status)               
     os.chdir('..')
 
+
+    #Add legend to passed RNAplots
+    #Add legend to failed RNAplots
+    files=glob.glob("RNAplots/failed/*.fa")
+    for file in files:
+        x=Path(file).stem
+        mstart=int(mirna_dict[x][2])
+        mstop=int(mirna_dict[x][3])
+        mirstart=int(mirna_dict[x][6])
+        mirstop=int(mirna_dict[x][7])
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.eps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
+        run(cmd)
 
     #Add legend to passed RNAplots
     files=glob.glob("RNAplots/passed/*.fa")
@@ -1297,10 +1511,10 @@ def main():
         mstop=int(mirna_dict[x][3])
         mirstart=int(mirna_dict[x][6])
         mirstop=int(mirna_dict[x][7])
-        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/passed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/passed/"+x+"_plot.ps"
+        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/passed/"+x+"_ss.eps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/passed/"+x+"_plot.ps"
         run(cmd)
 
-    ps_files = glob.glob(os.path.join('RNAplots/passed/', '*plot.ps'))
+    ps_files = glob.glob(os.path.join('RNAplots/passed/', '*_plot.ps'))
     # Loop through each file and convert it to PDF
     for ps_file in ps_files:
         # Construct the PDF file name
@@ -1309,20 +1523,7 @@ def main():
         cmd=("ps2pdf "+ ps_file + " " + pdf_file)
         run(cmd)
 
-    #Add legend to failed RNAplots
-    files=glob.glob("RNAplots/failed/*.fa")
-    for file in files:
-        x=Path(file).stem
-        mstart=int(mirna_dict[x][2])
-        mstop=int(mirna_dict[x][3])
-        mirstart=int(mirna_dict[x][6])
-        mirstop=int(mirna_dict[x][7])
-        cmd="awk -v n=14 -v s='0 0 0 setrgbcolor/Helvetica findfont\\n9 scalefont setfont \\n72 114 moveto \\n(miRNA: "+ x+" ) show' 'NR == n {print s} {print}' RNAplots/failed/"+x+"_ss.ps | awk -v n=14 -v s='/Helvetica findfont\\n9 scalefont setfont \\n72 104 moveto \\n(miRNA locus: "+ str(mstart)+ "-" + str(mstop)+ ") show \\n/Helvetica findfont\\n9 scalefont setfont \\n72 94 moveto \\n(miRNAStar locus: "+ str(mirstart)+ "-" + str(mirstop)+ ") show \\n0 0.5 1 setrgbcolor \\n65 96 4 0 360 arc closepath fill stroke \\n 1 0.5 0 setrgbcolor \\n65 106 4 0 360 arc closepath fill stroke' 'NR==n {print s} {print}'  > RNAplots/failed/"+x+"_plot.ps"
-        run(cmd)
-
-    print("Converting postscript files to PDF...")
-
-    ps_files = glob.glob(os.path.join('RNAplots/failed/', '*plot.ps'))
+    ps_files = glob.glob(os.path.join('RNAplots/failed/', '*_plot.ps'))
     # Loop through each file and convert it to PDF
     for ps_file in ps_files:
         # Construct the PDF file name
@@ -1330,24 +1531,9 @@ def main():
         cmd=("ps2pdf "+ ps_file + " " + pdf_file)
         run(cmd)
 
-#Remove unecessary files and move to output directory
-    cmd="rm -rf RNAplots/passed/*ss.ps*"
-    run(cmd)
-    cmd="rm -rf RNAplots/failed/*ss.ps*"
-    run(cmd)
-    cmd="rm -rf RNAplots/passed/*.fa"
-    run(cmd)
-    cmd="rm -rf RNAplots/failed/*.fa"
-    run(cmd)
-    cmd="rm -rf *.ebwt|rm -rf *.fai|rm -rf tmp* | rm -rf alignments/*bai"
-    run(cmd)
-    cmd="rm -rf ms_fastqs/"
-    run(cmd)
-    cmd="rm -rf RNAplots/passed/*plot.ps"
-    run(cmd)
-    cmd="rm -rf RNAplots/failed/*plot.ps"
-    run(cmd)
 
+#Remove unecessary files and move to output directory
+    cleanup_directories()
 
     print("Summary")
     print("____________________________________")
