@@ -891,11 +891,13 @@ def main():
                 maturestop=(maturestarti+len(mature))
                 maturestart=maturestarti+1
                 if maturestarti == 0 and og_star==None:
-                    mirpos_error.append(hp)
+                    mirpos_error.append(og_hp)
                     maturestarti=maturestarti+5
                     maturestop=maturestop+5
                 (ss,mfe)=RNA.fold(hairpin)
                 mir_ss=ss[maturestarti:maturestop]
+                if maturestop==len(hairpin):
+                    mirpos_error.append(og_hp)
 
                 #Index star sequence if exists, otherwise find star sequence.
                 if og_star is not None:
@@ -923,15 +925,15 @@ def main():
                         else:
                             star=hairpin[(starpos[0]-1):starpos[1]]
 
-                if starpos[0]==0 or starpos[1]==len(hp):
-                    starpos_error.append(hp)
+                if starpos[0]==0 or starpos[1]==len(hairpin):
+                    starpos_error.append(og_hp)
                     
                 #Check mature, star, and hp sequences for ATGCU
                 hp_check=DNAcheck(hairpin)
                 star_check=DNAcheck(star)
                 mature_check=DNAcheck(mature)
                 if hp_check == 1 or star_check ==1 or mature_check == 1:
-                    character_error.append(hp)
+                    character_error.append(og_hp)
             
             if og_hp not in failed:
                     #Check hairpin length and if mature or star multimaps to hairpin
