@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-version = '0.3.2'
+version = '0.3.3'
 
 import RNA, re, pysam, gzip
 from pysam import FastaFile
@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 from csv import writer
 startTime = time.time()
+
 
 #Check required packages
 print("Checking required modules...")
@@ -41,6 +42,7 @@ ap.add_argument("-out", help="output directory",default="miRScore_output")
 ap.add_argument("-autotrim", help="Trim untrimmed fastq files", nargs='?', const='')
 ap.add_argument("-trimkey", help="Abundant miRNA used to find adapters for trimming with option -autotrim")
 args = ap.parse_args()
+
 
 #Check that mature and hairpin files exist.
 if os.path.isfile(args.mature):
@@ -73,16 +75,19 @@ if args.fastq is not None:
 print("     'Output directory' "+ args.out+"/")
 print("--------")
 
-#Check format of files.
+#Check fastq/fasta exists
 if args.fastq is not None:
-    fastqs=list(args.fastq)
-    for f in fastqs:
-        if f.lower().endswith(('.fastq','.fq','.fastq.gz'))!=True:
-            msg = (f + " is not a fastq. Please revise input.")
-            sys.exit(msg)
+        #Create a list of all fastq files in provided directory.
+        fastas = ['../' + item for item in args.fastq if item.endswith(('.fa', '.fasta', '.fa.gz', '.fasta.gz'))]
+        fastqs = ['../' + item for item in args.fastq if item.endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz'))]
 
-if args.fastq:
-    print(" ")
+        total_files = len(fastas) + len(fastqs)
+        print(f"Number of FASTA files detected: {len(fastas)}")
+        print(f"Number of FASTQ files detected: {len(fastqs)}")
+        print(f"Total input libraries: {total_files}")
+
+        if total_files == 0:
+            sys.exit("No valid FASTQ or FASTA files found!")
 else:
     msg="Small-RNA libraries required. Please provide libraries."
     sys.exit(msg)
@@ -243,39 +248,39 @@ def score_animal(mature,star,hp,ss,maturepos,starpos):
         criteria.append("Y")
         
     #Test length of mature
-    if (len(mature)>25) or (len(mature)<19):
+    if (len(mature)>26) or (len(mature)<20):
         mscore.append(0)
         reason.append("Mature miRNA length not met")
         criteria.append("N")
-    elif (len(mature)>18) and (len(mature)<26):
+    elif (len(mature)>19) and (len(mature)<27):
         mscore.append(20)
         criteria.append("Y")
 
     #Test length of star
-    if (len(star)>25) or (len(star)<19):
+    if (len(star)>26) or (len(star)<20):
         mscore.append(0)
         reason.append("Star length not met")
         criteria.append("N")
-    elif (len(star)>=19) and (len(star)<=25):
+    elif (len(star)>19) and (len(star)<27):
         mscore.append(20)
         criteria.append("Y")
 
     #Obtain dotbrackets of mature and maturestar
-    star_db=ss[starpos[0]:starpos[1]-2]
-    mature_db = ss[maturepos[0]:maturepos[1]-2]
+    star_db=ss[starpos[0]:starpos[1]]
+    mature_db = ss[maturepos[0]:maturepos[1]]
     pairs=get_pairs(ss)
 
     #Test that mature/mature* duplex does not contain greater than 5 mismatches
     if (star_db.count(".")>7) or (mature_db.count(".") > 7):
         mscore.append(0)
-        reason.append(str("More than 7 mismatches"))
+        reason.append(str("More than 7 mismatches in duplex"))
         if (star_db.count("."))>(mature_db.count(".")):
             criteria.append(star_db.count("."))
         else:
             criteria.append(mature_db.count("."))
     elif (star_db.count(".")>5) or (mature_db.count(".") > 5):
         mscore.append(10)
-        reason.append(str("More than 5 mismatches"))
+        reason.append(str("More than 5 mismatches in duplex"))
         if (star_db.count("."))>(mature_db.count(".")):
             criteria.append(star_db.count("."))
         else:
@@ -394,14 +399,14 @@ def score_plant(mature,star,hp,ss,maturepos,starpos):
         criteria.append("23/24")
 
     #Obtain dotbrackets of mature and maturestar
-    star_db=ss[starpos[0]:starpos[1]-2]
-    mature_db = ss[maturepos[0]:maturepos[1]-2]
+    star_db=ss[starpos[0]:starpos[1]]
+    mature_db = ss[maturepos[0]:maturepos[1]]
     pairs=get_pairs(ss)
 
     #Test that mature/mature* duplex does not contain greater than 5 mismatches
     if (star_db.count(".")>5) or (mature_db.count(".") > 5):
         mscore.append(0)
-        reason.append("More than 5 mismatches")
+        reason.append("More than 5 mismatches in duplex")
         if (star_db.count("."))>(mature_db.count(".")):
             criteria.append(star_db.count("."))
         else:
@@ -467,7 +472,7 @@ def get_s_rels(q_rel_start, q_rel_stop, dotbracket):
     Determine the start and stop of miR* for a given miRNA and hairpin precursor
     """
     pairs = get_pairs(dotbracket)
- 
+
     # determine the 3' end of miR* from q_rel_start
     s_rel_stop = None
     for attempts, qpos in enumerate(range(q_rel_start, q_rel_stop)):
@@ -503,59 +508,62 @@ def get_pairs(dotbracket):
             pairs[bp2] = bp1
     return pairs
 
-def align_fastqs(args, fastqs):
+def align_fastqs(args, files):
     """
-    Align FASTQ file(s) to hairpin sequences and output alignments in BAM format.
+    Align FASTQ or FASTA file(s) to hairpin sequences and output alignments in BAM format.
 
     Parameters:
-        FASTQ (str): Path to the FASTQ file(s).
+        args: argparse arguments with .threads and .mm (mismatch) options
+        files: list of input FASTQ or FASTA files
 
     Returns:
-        BAM (file): Alignment file containing reads mapped to hairpin sequences.
+        None (writes BAM files to alignments/)
     """
-    # Build index and map hairpins to fastq files
-    print('')
-    print("Building index...")
-    # Create index of hairpins using bowtie
-    subprocess.call(['bowtie-build', 'tmp.hairpin.fa', 'hairpin'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    
-    # Map reads to hairpin
-    print("Mapping each FASTQ file to hairpin...")
-    for file in fastqs:
-        # Determine the mismatch option
+    print("\nBuilding index...")
+    subprocess.call(['bowtie-build', 'tmp.hairpin.fa', 'hairpin'],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    print("Mapping each file to hairpin...")
+    for file in files:
+        ext = Path(file).suffix.lower()
+        is_gz = file.endswith('.gz')
+        file_core = Path(file).with_suffix('').stem if is_gz else Path(file).stem
+        print(file_core)
+        print(file)
+
+        # Determine mismatch and input format
         mismatch_option = "-v1" if args.mm else "-v0"
-        
-        # Check if the file is compressed
-        if file.endswith('.gz'):
-            print(f"Mapping {file} (compressed) with mismatch option {mismatch_option}...")
-            with gzip.open(file, 'rt') as fastq_file:
+        fasta_flag = "-f" if ext in [".fa", ".fasta"] or file.endswith((".fa.gz", ".fasta.gz")) else ""
+
+        print(f"Mapping {file} with mismatch option {mismatch_option} and format {'FASTA' if fasta_flag else 'FASTQ'}...")
+
+        # Set up base command
+        cmd = [
+            'bowtie',
+            '-p', str(args.threads),
+            '-a', mismatch_option,
+            '--no-unal', '-S','--norc',
+            '-x', 'hairpin'
+        ]
+
+        if is_gz:
+            with gzip.open(file, 'rt') as f:
                 subprocess.call(
-                    [
-                        'bowtie', 
-                        "-p", str(args.threads), 
-                        "-a", mismatch_option, 
-                        "--no-unal", "--norc", 
-                        '-x', 'hairpin', '-',  # Use "-" to pipe stdin
-                        "-S", f"alignments/{Path(file).with_suffix('').stem}.bam"
-                    ],
-                    stdin=fastq_file,
+                    cmd + [fasta_flag, '-', "-S", f"alignments/{file_core}.bam"],
+                    stdin=f,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT
                 )
         else:
-            print(f"Mapping {file} (uncompressed) with mismatch option {mismatch_option}...")
-            subprocess.call(
-                [
-                    'bowtie', 
-                    "-p", str(args.threads), 
-                    "-a", mismatch_option, 
-                    "--no-unal", "--norc", 
-                    '-x', 'hairpin', file, 
-                    "-S", f"alignments/{Path(file).stem}.bam"
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT
-            )
+            if ext in [".fa", ".fasta"]:
+                cmd=f"bowtie -p {str(args.threads)} -a {mismatch_option} -f --no-unal -S --norc -x hairpin {file} | samtools view -Sb - > alignments/{file_core}.bam"
+                run(cmd)
+            else:
+                cmd=f"bowtie -p {str(args.threads)} -a {mismatch_option} --no-unal -S --norc -x hairpin {file} | samtools view -Sb - > alignments/{file_core}.bam"
+                run(cmd)
+
+
+
 
 def process_fastqs(fastqs, keydna, args):
     for fastq in tqdm.tqdm(fastqs, desc="Library trimming", disable=None):
@@ -707,6 +715,39 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
                                                           "Pass", sep.join(flag), result[2][3], result[2][4]])
     return pred_dict
 
+def swap_mirnas(file):
+    # Load your CSV
+    df = pd.read_csv(file)
+
+    # Ensure mReads and msReads are numeric (just in case)
+    df['mReads'] = pd.to_numeric(df['mReads'], errors='coerce')
+    df['msReads'] = pd.to_numeric(df['msReads'], errors='coerce')
+
+    # Create a mask that excludes NAs and selects rows where mReads < msReads
+    valid_mask = df['mReads'].notna() & df['msReads'].notna()
+    swap_mask = valid_mask & (df['mReads'] < df['msReads'])
+    output_file = args.n + "_miRScore_results.csv" if args.n else "miRScore_results.csv"
+
+    # Columns to swap in pairs
+    column_pairs = [
+        ('mReads', 'msReads'),
+        ('mSeq', 'msSeq'),
+        ('mLen', 'msLen'),
+        ('mStart', 'msStart'),
+        ('mStop', 'msStop')
+    ]
+
+    # Swap values only in rows where swap_mask is True
+    for m_col, ms_col in column_pairs:
+        temp = df.loc[swap_mask, m_col].copy()
+        df.loc[swap_mask, m_col] = df.loc[swap_mask, ms_col]
+        df.loc[swap_mask, ms_col] = temp
+
+    df = df.fillna("NA")
+    # Save to file
+    df.to_csv(output_file, index=False)
+
+
 def generate_options(hp):
     """
     Generate naming options for miRNA and miRNA* based on the input hairpin name (hp).
@@ -721,17 +762,22 @@ def generate_options(hp):
         if re.match(r'^\w+-\w+-\w+', hp):
             base_name = "-".join(hp.split("-")[:-1])  # Extract all elements before the last hyphen
             suffix_name = hp.split("-")[-1]  # Extract the last element after the last hyphen
-            suffixes = ["", "-5p", "-" + suffix_name, "-" + suffix_name + "-5p", ".mature",'-3p','-' + suffix_name + '-3p']
+            suffixes = ["","-5p","-3p","-" + suffix_name,"-" + suffix_name + "-5p","-" + suffix_name + "-3p",".mature",".1",".2",".3",".4"]
             star_suffixes = ["-3p", "-" + suffix_name + "-3p", ".star", "*"]
         else:
             base_name = hp
-            suffixes = ["", "-5p", ".mature",'-3p']
+            suffixes = ["","-5p","-3p",".mature",".1",".2",".3",".4"]
             star_suffixes = ["-3p", ".star", "*"]
         options = [base_name + suffix for suffix in suffixes]
         star_options = [base_name + suffix for suffix in star_suffixes]
         return options, star_options
             
     elif args.kingdom == "animal":
+        if hp.endswith("-as"):
+            # Keep -as intact as part of the base name
+            base_name = hp
+            suffixes = ["", "-5p", "-3p", ".mature"]
+            star_suffixes = ["-3p", ".star", "*"]
         if re.match(r'^\w+-mir\w+-\w+-', hp):
             base_name = "-".join(hp.split("-")[:-1])  # Extract the first three elements before the hyphen and join them with hyphens
             suffix_name = "-".join(hp.split("-")[-1:])  # Extract the first three elements before the hyphen and join them with hyphens
@@ -756,6 +802,7 @@ def cleanup_directories():
     Removes temporary and intermediate files from various directories.
     """
     paths_to_remove = [
+        "Results.csv",
         "RNAplots/passed/*ss.eps*",
         "RNAplots/failed/*ss.eps*",
         "RNAplots/passed/*.fa",
@@ -884,7 +931,9 @@ def main():
             #Hairpin and mature sequences based on og name
             hairpin=str(hp_dict[og_hp].seq).upper()
             mature=str(mir_dict[og_mir].seq).upper()
-
+            if len(hairpin)<len(mature):
+                msg="Hairpin sequence is shorter than the mature sequence. Please check you used the correct files."
+                sys.exit(msg)
             #Index mature sequence
             if mature in hairpin:
                 maturestarti=hairpin.index(mature)
@@ -894,10 +943,10 @@ def main():
                     mirpos_error.append(og_hp)
                     maturestarti=maturestarti+5
                     maturestop=maturestop+5
+                #if maturestop==len(hairpin):
+                    #mirpos_error.append(og_hp)
                 (ss,mfe)=RNA.fold(hairpin)
                 mir_ss=ss[maturestarti:maturestop]
-                if maturestop==len(hairpin):
-                    mirpos_error.append(og_hp)
 
                 #Index star sequence if exists, otherwise find star sequence.
                 if og_star is not None:
@@ -912,7 +961,10 @@ def main():
                     else:
                         og_star= None
                         starpos=get_s_rels(maturestart,maturestop,ss)
-                        star=hairpin[(starpos[0]-1):starpos[1]].upper()
+                        if starpos is None or starpos[0] is None or starpos[1] is None:
+                            failed[og_hp]="Hairpin structure invalid"
+                        else:
+                            star=hairpin[(starpos[0]-1):starpos[1]].upper()
 
                 else:
                     starpos=get_s_rels(maturestart,maturestop,ss)
@@ -925,7 +977,7 @@ def main():
                         else:
                             star=hairpin[(starpos[0]-1):starpos[1]]
 
-                if starpos[0]==0 or starpos[1]==len(hairpin):
+                if starpos[0]==0:
                     starpos_error.append(og_hp)
                     
                 #Check mature, star, and hp sequences for ATGCU
@@ -976,16 +1028,20 @@ def main():
                         elif mir_ss.count("(") != 0 and mir_ss.count(")") !=0:
                             flag=["Hairpin structure invalid"]
                             y.append(og_hp)
-                            add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Fail",sep.join(flag),result[2][3],result[2][4]])
+                            add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Fail",sep.join(flag),result[2][3],result[2][4],"NA","NA","NA","NA","NA"])
                         elif og_star is not None:
                             if starpos[0] != starpos_check[0] or starpos[1] != starpos_check[1]:
                                 flag=["No 2nt 3' overhang"]
                                 add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Fail",sep.join(flag),result[2][3],result[2][4]])
-                            else:
+                            elif sum(result[0]) < 81:
+                                y.append(og_hp)
+                                flag=list(result[1])
+                                add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Fail",sep.join(flag),result[2][3],result[2][4]])
+                            else:  
                                 add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Pass",sep.join(flag),result[2][3],result[2][4]])
                         elif sum(result[0]) < 81:
                             y.append(og_hp)
-                            flag=list (result[1])
+                            flag=list(result[1])
                             add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Fail",sep.join(flag),result[2][3],result[2][4]])
                         else:
                             add_values_in_dict(mirna_dict,og_hp,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,str(star.translate(str.maketrans("tT", "uU"))),len(star),(starpos[0]),starpos[1],hairpin.translate(str.maketrans("tT", "uU")),len(hairpin),"Pass",sep.join(flag),result[2][3],result[2][4]])
@@ -1025,14 +1081,14 @@ def main():
         print('Error! These miRNAs start at position 1 of the hairpin: ')
         print(mirpos_error)
         print(" ")
-        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend the hairpin sequences or remove them")
+        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature/star starts or ends the hairpin. Please extend the hairpin sequences or remove them.")
         print(" ")
         sys.exit()
     elif len(starpos_error)>0:
         print('Error! These miRNA star sequences start at position 1 of the hairpin: ')
         print(starpos_error)
         print(" ")
-        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature starts at position one. Please extend the hairpin sequences or remove them")
+        print("The miRNA duplex structure requires a 3p overhang which cannot be determined if the mature/star starts or ends the hairpin. Please extend the hairpin sequences or remove them.")
         print(" ")
         sys.exit()
     elif len(character_error)>0:
@@ -1047,53 +1103,52 @@ def main():
     #If argument -fastq used, map FASTQ to hairpins directly
     if args.fastq is not None:
         #Create a list of all fastq files in provided directory.
-        fastqs = ['../' + item for item in args.fastq]
-        print("Number of Fastq files detected: " + str(len(fastqs)))
+        fastas = ['../' + item for item in args.fastq if item.endswith(('.fa', '.fasta', '.fa.gz', '.fasta.gz'))]
+        fastqs = ['../' + item for item in args.fastq if item.endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz'))]
+
+        total_files = len(fastas) + len(fastqs)
+        print(f"Number of FASTA files detected: {len(fastas)}")
+        print(f"Number of FASTQ files detected: {len(fastqs)}")
+        print(f"Total input files: {total_files}")
+
+        if total_files == 0:
+            sys.exit("No valid FASTQ or FASTA files found!")
 
         subprocess.call(["mkdir","alignments"])
         #Trim fastq files
-        if args.autotrim is not None:
-            print(" ")
-            print("Option autotrim enabled. Trimming fastq files...")
-            if args.trimkey != None:
-                print("Adapter trimming initiated with: "+ args.trimkey)
-            print("_____________________________")
-            print(" ")
-
-            #If no key provided, set key according to kingdom.
-            if args.trimkey is None:
-                subprocess.call(["mkdir","trimmedLibraries"])
-                if args.kingdom == 'plant':
-                    #ath-miR166a
-                    print("No key provided for trimming.")
-                    key="UCGGACCAGGCUUCAUUCCCC"
-                    print("-trimkey used for discovering adapter sequence: "+key)
+        if fastqs:
+            if args.autotrim is not None:
+                print("\nOption autotrim enabled. Trimming fastq files...")
+                if args.trimkey:
+                    print("Adapter trimming initiated with key:", args.trimkey)
                 else:
-                    #hsa-let-7a
                     print("No key provided for trimming.")
-                    key="UGAGGUAGUAGGUUGUAUAGUU"
-                    print("-trimkey used for discovering adapter sequence: " + key)
+                    args.trimkey = "UCGGACCAGGCUUCAUUCCCC" if args.kingdom == 'plant' else "UGAGGUAGUAGGUUGUAUAGUU"
+                    print("-trimkey used for discovering adapter sequence:", args.trimkey)
+
+                key = args.trimkey.upper()
+                keydna = key.translate(str.maketrans("uU", "tT"))
+
+                # Sanity check
+                if DNAcheck(keydna) == 1:
+                    sys.exit("Error! Key for trimming adapters must only contain A, T, G, C, or U.")
+                if not (20 <= len(keydna) <= 30):
+                    sys.exit("Trim key must be between 20 and 30 nucleotides")
+
+                subprocess.call(["mkdir", "-p", "trimmedLibraries"])
+                process_fastqs(fastqs, keydna, args)
+
+                print("Adapter trimming complete.")
+                modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
+                align_fastqs(args, modified_fastqs)
             else:
-                subprocess.call(["mkdir","trimmedLibraries"])
-                key=args.trimkey
-            #Change key to uppercase and to DNA
-            key=key.upper()
-            keydna=key.translate(str.maketrans("uU", "tT"))
+                align_fastqs(args, fastqs)
 
-            key_check=DNAcheck(keydna)
-            if key_check ==1:
-                sys.exit("Error! Key for trimming adapters has characters besides A, T, G, C, or U!")
-            if (len(key) < 20) or (len(key) > 30):
-                sys.exit("Trim key must be between 20 and 30 letters")
-
-            process_fastqs(fastqs, keydna, args)
-
-            print("Adapter trimming complete.")
-            modified_fastqs = ["trimmedLibraries/t_" + os.path.basename(f) for f in fastqs]
-            print(modified_fastqs)
-            align_fastqs(args,modified_fastqs)
-        else:
-            align_fastqs(args,fastqs)
+        # If there are any FASTA files, align them directly (no trimming needed)
+        if fastas:
+            for fasta in fastas:
+                print(f"Processing untrimmed FASTA file: {fasta}")
+            align_fastqs(args, fastas)
 
     bamfiles=glob.glob('alignments/*.bam')
     #Sort bam files
@@ -1174,7 +1229,7 @@ def main():
         if row['mReads'] <= 0 or row['msReads']<=0:
             flags.append("No mature or star reads detected")
         elif (row['mReads'] + row['msReads']<10):
-            flags.append("Less than 10 reads")
+            flags.append("Less than 10 reads in a single library")
         elif row['precision'] < 75:
             flags.append("Precision less than 75%")
         else:
@@ -1288,10 +1343,10 @@ def main():
                     #Otherwise, if no libraries had at least 10 reads, report it failed for reads.
                 else:                    
                     if mirna_dict[x][11] =="NA":
-                        mirna_dict[x][11]="Less than 10 reads"
+                        mirna_dict[x][11]="Less than 10 reads in a single library"
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
                     else:
-                        mirna_dict[x][11]+=";Less than 10 reads"       
+                        mirna_dict[x][11]+=";Less than 10 reads in a single library"       
                         add_values_in_dict(mirna_dict,x,[sum(mir_reads),sum(mirstar_reads),sum(all_reads),len(bamfiles),precision])
 
     fails=['Hairpin is less than 50 basepairs','Mature not found in hairpin sequence','miRNA multimaps to hairpin','Sequence contained characters besides U,A, T, G, or C',"Hairpin structure invalid"]
@@ -1308,8 +1363,14 @@ def main():
 
             (ss, mfe)=RNA.fold(hairpin)
             starpos=get_s_rels(maturestart,maturestop,ss)
-            star=hairpin[(starpos[0]-1):starpos[1]].upper()
-            add_values_in_dict(mirna_dict,mirfail,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,star,len(star),"NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            if starpos is not None:
+                star=hairpin[(starpos[0]-1):starpos[1]].upper()
+            else:
+                star = "NA"
+            if starpos is not None:
+                add_values_in_dict(mirna_dict,mirfail,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,star,len(star),"NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
+            else:
+                add_values_in_dict(mirna_dict,mirfail,[mature.translate(str.maketrans("tT", "uU")),len(mature),maturestart,maturestop,"NA","NA","NA","NA",hairpin,len(hairpin),"Fail",str(failed[mirfail]),"NA","NA","NA","NA","NA","NA","NA"])
         else:
             seq= str(hp_dict[mirfail].seq).upper()
             og_mir=str(name_dict[mirfail][0])
@@ -1319,17 +1380,15 @@ def main():
 
     #Write final output file
     header = ["name", "mSeq", "mLen", "mStart", "mStop", "msSeq", "msLen", "msStart", "msStop", "precSeq", "precLen", "result", "flags", "mismatches", "bulges", "mReads", "msReads", "totReads", "numLibraries", "precision"]
-    output_file = args.n + "_miRScore_results.csv" if args.n else "miRScore_results.csv"
+    output_file = "Results.csv"
 
     with open(output_file, mode="w", newline='') as csv_out:
         csv_writer = writer(csv_out)
         csv_writer.writerow(header)
         for k, v in mirna_dict.items():
             csv_writer.writerow([k, *v])
-    # Load the data
-    data = pd.read_csv(filename)
-
-
+    # swap miRNA and miRNA* position if miRNA is more abundant
+    swap_mirnas("Results.csv")
     ##############################################
     ##Beginning of mirna alternative analyzer
     print("*************")
