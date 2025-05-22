@@ -1,7 +1,16 @@
 <img width="350" alt="Screenshot 2024-12-04 at 1 45 24 PM" src="https://github.com/user-attachments/assets/afa29e9f-83bb-4caf-bef8-fc1f39924c60">
 
+## Table of Contents
 
-# Description
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Options](#options)
+- [Preparing database files](#preparing-database-files)
+- [Output](#output)
+- [FAQ](#faq)
+
+# Overview
 
 miRScore is a microRNA(miRNA) validation tool developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether *MIRNA* loci are of high confidence based on the criteria outlined in the literature. Users submit mature miRNA sequences, hairpin sequences, and sRNA-seq data to miRScore. miRScore will then score each *MIRNA* locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each *MIRNA* locus.
 
@@ -115,6 +124,96 @@ cd ..
 ```
 miRScore -mature ath_miRBase_miRNAs.fa -hairpin ath_miRBase_precursors.fa -fastq fastqs/* -kingdom plant -autotrim
 ```
+# Preparing database files
+A common use case for miRScore may include evaluating known miRNAs from databases such as miRBase or MirGeneDB using user-generated sRNA-seq libraries. Both databases have inconsistencies and idiosyncrasies in their microRNA and hairpin naming schemes that prevent input of "raw" files into miRScore. Here are two examples of how to prepare data from miRBase and MirGeneDB respectively.
+
+
+## miRBase
+### Example : *Arabidopsis thaliana*
+
+### 1. Download the 'mature.fa' and 'hairpin.fa' file from miRBase download page.
+```
+#precursor sequences
+wget -O hairpin.fa "https://mirbase.org/download/hairpin.fa"
+
+#mature sequences
+wget -O mature.fa "https://mirbase.org/download/mature.fa"
+```
+
+### 2. Prepare hairpin file by converting to single line FASTA
+```
+awk '/^>/ {if (seq) print seq; print; seq=""; next} {seq = seq $0} END {print seq}' hairpin.fa > singleline_hairpin.fa
+```
+
+### 3. Parse out ath entries and adjust names to be more concise. The mature miRNA and hairpin names must match!
+```
+# Hairpin sequences
+cat singleline_hairpin.fa| grep -A1 "thaliana" |grep -v -e '--' > ath_hairpins.fa
+
+sed -i 's/ .*//' ath_hairpins.fa
+
+# miRNA and miRNA* sequences
+cat mature.fa| grep -A1 "thaliana"|grep -v -e '--'> ath_mature.fa
+
+sed -i 's/ .*//' ath_mature.fa
+```
+### 4. Download fastq files
+```
+mkdir fastq
+cd fastq
+fasterq-dump SRR218096
+```
+### At this stage, if you run miRScore it will inform you of the following:
+Error! The following entries in the MIRNA hairpin file 'ath_hp.fa' have no mature sequences that match their identifiers in file 'ath_mat.fa'. ['ath-MIR161', 'ath-MIR779', 'ath-MIR780', 'ath-MIR869', 'ath-MIR1886'] <br>
+        Please check all hairpins in the hairpin FASTA file have miRNAs in the mature FASTA file with the same name.
+        If you have multiple miRNAs assigned to a single locus (i.e. osa-miR159a.1/osa-miR159a.2 to osa-MIR159a)
+        please run 'hairpinHelper' then rerun miRScore with the'miRScore_adjusted_hairpins.fa' file as the hairpin FASTA input.
+
+### So you need to run hairpinHelper like so:
+```
+hairpinHelper -mature ath_mature.fa -hairpin ath_hairpins.fa
+```
+Alternatively, you could just remove those entries from the hairpin file. 
+<br>
+<br>
+
+### 5. Run miRScore using adjusted hairpins
+```
+miRScore -mature ath_mature.fa -hairpin miRScore_adjusted_hairpins.fa -fastq fastq/* -autotrim -kingdom plant -out ath_results
+```
+
+## MirGeneDB
+### Example : *Homo sapiens*
+
+
+### 1. Download precursors w/ flank and mature sequences
+```
+#precursor sequences
+wget -O hsa-pri.fa "https://mirgenedb.org/fasta/hsa?pri=1"
+
+#mature sequences
+wget -O hsa-mat.fa "https://mirgenedb.org/fasta/hsa?mat=1"
+
+```
+### 2. Adjust precursors to not have '_pri' and miRNAs need to have '-3p' not "_3p" in order for miRScore to recognize.
+```
+#Precursor
+sed -i 's/_pri//' hsa-pri.fa
+
+#Mature
+sed -i '/^>/ s/_\([35]p\)/-\1/' hsa-mat.fa
+```
+### 3. Download fastq files
+```
+mkdir fastq
+cd fastq
+fasterq-dump SRR518956
+```
+
+### 4. Run miRScore
+```
+miRScore -mature hsa-mat.fa -hairpin hsa-pri.fa -kingdom animal -fastq fastq/* -autotrim -out hsa_results
+```
 
 # Output
 miRScore has six outputs:
@@ -213,6 +312,7 @@ python hairpinHelper [-help] -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa
 
 
 # FAQ
+
 ### 1. How does miRScore handle reporting reads?
 miRScore reports read counts for the miRNA duplex, totReads, and precision based on which sRNA-seq libraries pass or fail. If a user submits 10 libraries, and all the expression criteria are met in only 2, `mreads`, `msReads`, `totReads`, and `precision` will reflect only those 2 libraries, while the remaining 8 will not be included. Read counts for each locus in each of the 10 libraries can still be found in 'reads.csv' file. If either expression criterion is not met in any individual library, the miRNA will Fail and miRScore will report these values for all 10 libraries.
 
