@@ -895,7 +895,6 @@ def main():
     for hp in normalized_hpdict:
         #Generate normalized name options for mature and star
         options = generate_options(hp)
-        print(options)
         mature_option = next((option for option in options[0] if option in normalized_mirdict), None)
         if mature_option == None:
             noHP_error.append(normalized_hpdict[hp])
@@ -1077,6 +1076,7 @@ def main():
         print("")
         print("Star miRNAs sequences that index to the first position of the hairpin: ")
         print(starpos_error)
+        print("")
         print( "The following miRNA or hairpin sequences have characters besides A, T, G, C, or U in the sequence. Please ammend or remove the following:")
         print(character_error)
         print(" ")
