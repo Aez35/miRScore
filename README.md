@@ -25,7 +25,7 @@ What constitutes a miRNA is based on several structural and quantitative charact
 |2 nucleotide 3' overhang of miRNA duplex                                |
 |No secondary stems or large loops in miRNA duplex                       |
 |Hairpin sequence should be less than 200(animals)/300(plants) nts       |
-|miRNA must be between 20-24 nucleotides for plants or 19-25 for animals |
+|miRNA must be between 20-24 nucleotides for plants or 20-26 for animals |
 |Confirmation of the miRNA and miRNA* by small RNA-sequencing            |
 |At least 75% of reads that map to hairpin must come from miRNA duplex   |
 |At least 10 exact reads must map to the miRNA duplex within a single library |
