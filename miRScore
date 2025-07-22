@@ -700,7 +700,7 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
                 # if start is greater than stop, mirstar fails.
                 if mirsspos[0] < mirsspos[1] and (mirsspos[1] - mirsspos[0]) < (25):
                     mirstar = hp[mirsspos[0]:mirsspos[1]]
-                    mirpos = [mstart, mstop]
+                    mirpos = [mstart-1, mstop]
                     if args.kingdom == "animal":
                         result = score_animal(mature, mirstar, hp,ss, mirpos, mirsspos)
                     if args.kingdom == "plant":
