@@ -12,25 +12,24 @@
 
 # Overview
 
-miRScore is a microRNA(miRNA) validation tool developed to analyze novel miRNAs prior to submission to [miRBase](https://www.mirbase.org/). This tool can be used to determine whether *MIRNA* loci are of high confidence based on the criteria outlined in the literature. Users submit mature miRNA sequences, hairpin sequences, and sRNA-seq data to miRScore. miRScore will then score each *MIRNA* locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each *MIRNA* locus.
+miRScore is a microRNA(miRNA) validation tool developed to analyze novel miRNAs annotated using small RNA-sequencing data. This tool can be used to determine whether *MIRNA* loci are of high confidence based on the criteria outlined in peer-reviewed publications. Users submit mature miRNA sequences, hairpin sequences, and sRNA-seq data to miRScore. miRScore will then score each *MIRNA* locus and output several files analyzing the submitted loci. The primary results can be found in the miRScore_Results.csv file, which contains positional and read information, as well as a pass/fail result for each *MIRNA* locus.
 
 ### **Determining what is a 'miRNA'**
 
-What constitutes a miRNA is based on several structural and quantitative characteristics. For plants, this criteria can be found in [Axtell and Meyers (2018)](https://pubmed.ncbi.nlm.nih.gov/29343505/). For animals, miRNA criteria is based on those outlined in [Rolle et al. (2016)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4816427/). Here is a short summary of the criteria outlined in the manuscript:
+What constitutes a miRNA is based on several structural and quantitative characteristics. For full details on these criteria, please see [miRScore: a rapid and precise microRNA validation tool](https://doi.org/10.1101/2024.12.12.628184). Here is a short summary of the criteria outlined in the manuscript:
 
 |microRNA Criteria                                                                |
 |:----------------------------------------------------------------------:|
-|Less than 5 mismatches in miRNA duplex                                  |
-|There must not be more than 3 nucleotides in asymmetric bulges          |
-|2 nucleotide 3' overhang of miRNA duplex                                |
+|Less than five mismatches in miRNA duplex                                  |
+|There must not be more than three nucleotides in asymmetric bulges          |
+|Two nucleotide 3' overhang of miRNA duplex                                |
 |No secondary stems or large loops in miRNA duplex                       |
-|Hairpin sequence should be less than 200(animals)/300(plants) nts       |
 |miRNA must be between 20-24 nucleotides for plants or 20-26 for animals |
 |Confirmation of the miRNA and miRNA* by small RNA-sequencing            |
 |At least 75% of reads that map to hairpin must come from miRNA duplex   |
-|At least 10 exact reads must map to the miRNA duplex within a single library |
+|At least ten exact reads must map to the miRNA duplex within a single library |
 
-miRScore verifies *MIRNA* loci using these conditions, but with some leniency for the length of the precursor. If the hairpin precursor is longer than the specified length but all other criteria are met, the locus will still pass. In addition, miRScore utilizes a read floor which requires at least 10 exact miRNA/miRNA* reads map to the miRNA duplex in at least one library. 
+miRScore verifies *MIRNA* loci using these conditions. miRScore utilizes a read floor which requires at least 10 exact miRNA/miRNA* reads map to the miRNA duplex in at least one library. 
 
 # Installation
 miRScore can be installed through `conda` package manager from the bioconda channel, or through manual set up.
@@ -218,7 +217,7 @@ miRScore -mature hsa-mat.fa -hairpin hsa-pri.fa -kingdom animal -fastq fastq/* -
 # Output
 miRScore has six outputs:
 
-* `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs. Do NOT edit if submitting to miRBase.
+* `miRScore_Results.csv`: A csv file containing the results for all proposed miRNAs.
 * `reads.csv`: A csv file containing read counts for miR, miR*, and total reads mapped to hairpin in each submitted library.
 * `alt_miRScore_Results.csv`: A csv file containing the results for alternative miRNA suggestions on a failed miRNA hairpin.
 * `alt_reads.csv`: A csv file containing read counts for alternative miR, miR*, and total reads mapped to hairpin in each submitted library
@@ -241,7 +240,7 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 * `precSeq` - Hairpin precursor sequence.  
 * `precLen` - Length of hairpin precursor.  
 * `result` - Pass/Fail result of miRScore for miRNA.  
-* `flags` - Criteria that was not met by the miRNA duplex according to Axtell and Meyers (2018).  
+* `flags` - Criteria that was not met by the *MIRNA* locus.  
 * `mismatch` - Number of mismatches in miRNA duplex.  
 * `mReads` - Sum of reads that map to mature miRNA position +/- 1 position in all libraries which meet criteria. See FAQ1 for details on read counting.
 * `msReads` - Sum of reads that map to miRNA star position +/- 1 position. See FAQ1 for details on read counting.
@@ -253,19 +252,22 @@ This file contains the results for all candidate miRNAs submitted to miRScore. D
 Flags are reported to help the user determine what criteria a *MIRNA* locus did not meet. Most flags reported lead to a hard fail (i.e. 'Precision less than 75%', 'Less than 10 reads'). Two flags ('23/24 nt' and 'Precursor > 300 nt') do not cause a *MIRNA* locus to fail, and instead are reported to indicate to the user that the miRNA or the *MIRNA* hairpin have longer lengths and should be evaluted carefully.
 
 #### List of potential flags
-* `Hairpin structure invalid` - The *MIRNA* hairpin secondary structure does not allow for the indexing of the miRNA duplex. This may be due to a large bulge or large hairpin with secondary stem loops at the duplex.
-* `More than 5 mismatches` - More than 5 nucleotides are mismatched between the miRNA and miRNA* sequences.
-* `23/24 nt miRNA` - The miRNA/miRNA* is 23 or 24 nucleotides in length.
-* `asymmetric bulge greater than 3` - There is an asymmetric bulge greater than 3 nucleotides in the miR duplex.
-* `Hairpin is less than 50 basepairs` - The user-provided hairpin sequence is less than 50 basepairs.
-* `miRNA multimaps to hairpin` - The miRNA or miRNA* provided by the user multimaps to hairpin sequence.
-* `No mature or star reads detected` - Reads were not detected in the libraries provided for either mReads, msReads, or both.
-* `Less than 10 reads` - The *MIRNA* locus had less than 10 combined mature and star reads in a single library. The miRNA does not meet the read floor.
-* `Precision less than 75%` - The precision (miR* reads + miR* reads / total reads mapped to hairpin) did not meet the required 75% in a single library.
-* `precursor > 200/300 nt` - The user provided miRNA precursor has a length greater than 200/300 nucleotides.
-* `No 2nt 3' overhang` - The user-provided star sequence did not meet the criteria for a 2nt overhang on the 3' end of the miRNA duplex.
-* `Mature not found in hairpin sequence` - The exact mature miRNA sequence was not found in the hairpin sequence.
-* `NA` - The miRNA meets all miRScore criteria.
+|Flag    |Explanation                                              |Result if flag is present |
+|:---------:|:-----------------------------------------------------------:   | :---------: |
+|More than 5 mismatches in duplex     | More than 5 base pairs are mismatched in the miRNA duplex | fail(plants) / warning (animals) |
+|More than 7 mismatches in the duplex |  More than 7 base pairs are mismatched in the miRNA duplex     | Fail |
+| 23/24 nt miRNA | The miRNA/miRNA* duplex is 23 or 24 nucleotides in length | Warning|
+|Asymmetric bulge greater than 3| There is an asymmetric bulge greater than 3 base pairs in the miRNA duplex | Fail|
+| Hairpin is less than 50 nucleotides|The user-provided hairpin sequence is less than 50 nucleotides in length | Fail|
+| miRNA multimaps to hairpin| The miRNA or miRNA* provided by the user indexed to multiple locations on the hairpin | Fail|
+| Less than 10 reads in a single library| Less than 10 combined miRNA/miRNA* reads in a single library were detected. Does not meet the read floor. | Fail|
+| No mature or star reads detected| No reads were detected for the miRNA or miRNA* in a single library| Fail|
+|Precision less than 75%| The precision (miRNA reads + miRNA* reads/total reads mapped to hairpin) did not reach 75% in a single library | Fail|
+|No 2nt 3' overhang| The user-provided miRNA/miRNA* sequences did not form a duplex with a 2nt 3’ overhang | Fail|
+| Hairpin structure invalid| The hairpin secondary structure did not allow indexing of miRNA duplex. This may be due to large bulge or secondary stem loop. | Fail|
+|Precursor > 300 nt | The hairpin sequence is larger than 300 nucleotides| Warning (plants)|
+|Precursor > 200 nt | The hairpin sequence is larger than 200 nucleotides | Warning (animals)|
+
 
 ## reads.csv
 A csv file containing the reads reported in each library of the miRNA, miRNA*, and total reads mapped to each hairpin. Also includes a Pass/Fail result and flag column. A 'Pass' indicates the *MIRNA* locus that meets the read floor (greater than 10 reads map to the miRNA duplex), has at least one read mapped to both miR and miR*, and has a precision greater than 75% in the reported library. A 'Fail' indcates one of these criteria are not met.
