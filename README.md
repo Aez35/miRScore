@@ -107,7 +107,7 @@ miRScore requires two FASTA files and small RNA-seq libraries in FASTQ format in
 
 # Example
 
-For this example, miRScore was tested on a set of 15 _Arabidopsis thaliana_ *MIRNA* loci downloaded from miRBase and small RNA-sequencing data downloaded from [PlantSmallRNAgenes](https://plantsmallrnagenes.science.psu.edu/genomes.php?id=50).
+For this example, miRScore was tested on a set of 15 _Arabidopsis thaliana_ *MIRNA* loci downloaded from miRBase and small RNA-sequencing data downloaded from [Lunardon et al., (2020)](https://pubmed.ncbi.nlm.nih.gov/32179590/).
 
 1. Download the two FASTA files provided in [TestData](https://github.com/Aez35/miRScore/tree/main/TestData) folder: `ath_miRBase_miRNAs.fa` and `ath_miRBase_precursors.fa`. Place these in your working directory.
 
@@ -265,6 +265,8 @@ Flags are reported to help the user determine what criteria a *MIRNA* locus did 
 |Precision less than 75%| The precision (miRNA reads + miRNA* reads/total reads mapped to hairpin) did not reach 75% in a single library | Fail|
 |No 2nt 3' overhang| The user-provided miRNA/miRNA* sequences did not form a duplex with a 2nt 3’ overhang | Fail|
 | Hairpin structure invalid| The hairpin secondary structure did not allow indexing of miRNA duplex. This may be due to large bulge or secondary stem loop. | Fail|
+| Star length not met| The miRNA star sequence is less than or greater than allowed by criteria | Fail|
+| Mature miRNA length not met| The mature miRNA length is less than or greater than allowed by criteria | Fail|
 |Precursor > 300 nt | The hairpin sequence is larger than 300 nucleotides| Warning (plants)|
 |Precursor > 200 nt | The hairpin sequence is larger than 200 nucleotides | Warning (animals)|
 
