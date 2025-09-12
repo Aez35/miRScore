@@ -83,6 +83,8 @@ miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRP
 |trimkey    | miRNA sequence for detecting adapter sequences for trimming    |
 |kingdom    | Specify either 'plant' or 'animal'                             |
 |out        | Specify output directory. Defaults to 'miRScore_output/'       |
+|rescue     | Reevaluate failed miRNAs and reannotate locus with alternative miRNA duplex that meets all criteria|
+
 
 
 ### Bowtie
