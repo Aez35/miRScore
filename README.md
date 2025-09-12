@@ -65,7 +65,7 @@ Download miRScore script from the GitHub repo. miRScore can be run using python 
 
 ## miRScore
 ```
-miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-autotrim] [-trimkey KEY] [-threads THREADS] -kingdom plant/animal [-out outputDirectory, default= miRScore_output/]
+miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-star STARFILE.fa] [-mm] [-n NAME] [-autotrim] [-trimkey KEY] [-threads THREADS] -kingdom plant/animal [-rescue] [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
