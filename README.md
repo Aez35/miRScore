@@ -16,7 +16,7 @@ miRScore is a microRNA(miRNA) validation tool developed to analyze novel miRNAs 
 
 ### **Determining what is a 'miRNA'**
 
-What constitutes a miRNA is based on several structural and quantitative characteristics. For full details on these criteria, please see [miRScore: a rapid and precise microRNA validation tool](https://doi.org/10.1101/2024.12.12.628184). Here is a short summary of the criteria outlined in the manuscript:
+What constitutes a miRNA is based on several structural and quantitative characteristics. For full details on these criteria, please see [miRScore: a rapid and precise microRNA validation tool](https://doi.org/10.1371/journal.pcbi.1013663). Here is a short summary of the criteria outlined in the manuscript:
 
 |microRNA Criteria                                                                |
 |:----------------------------------------------------------------------:|
@@ -65,7 +65,7 @@ Download miRScore script from the GitHub repo. miRScore can be run using python 
 
 ## miRScore
 ```
-miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-mm] [-n NAME] [-autotrim] [-trimkey KEY] [-threads THREADS] -kingdom plant/animal [-rescue] [-out outputDirectory, default= miRScore_output/]
+miRScore [-help] -fastq FASTQFILES.fq/fastq/fa/fasta -mature MATUREFILE.fa -hairpin HAIRPINFILE.fa [-mm] [-n NAME] [-autotrim] [-trimkey KEY] [-threads THREADS] -kingdom plant/animal [-rescue] [-out outputDirectory, default= miRScore_output/]
 ```
 
 ## Options
@@ -75,8 +75,8 @@ miRScore [-help] -fastq FASTQFILES.fq/fastq -mature MATUREFILE.fa -hairpin HAIRP
 |help       | prints help message                                            |
 |mature     | FASTA file containing mature and star sequences of miRNAs|
 |hairpin    | FASTA file containing hairpin precursor sequences of mirnas    |
-|fastq      | List of small RNA-seq libraries in FASTQ format                |
-|mm         | Allow up to 1 mismatch in sRNA-seq reads                          |
+|fastq      | List of small RNA-seq libraries in FASTQ or FASTA format       |
+|mm         | Allow up to 1 mismatch in sRNA-seq reads                      |
 |n          | Specify a name to be added at the beginning of output files    |
 |threads    | Specify number of threads to use during trimming step          |
 |autotrim   | Trim fastq files using cutadapt                                |
@@ -103,7 +103,7 @@ miRScore requires two FASTA files and small RNA-seq libraries in FASTQ format in
 
 * `-mature maturefile`: FASTA file containing mature miRNA sequences of proposed novel miRNAs for scoring.   
 * `-hairpin hairpinfile`:  FASTA file containing the hairpin sequences in which the mature miRNAs can be found.  
-* `-fastq fastqfiles`:  Small RNA-seq libraries in FASTQ format (can be compressed). If libraries are untrimmed, you must use option '-autotrim' to trim libraries. You may supply a key for trimming using option '-trimkey'. Default trimkey is ATH-miR166a for plants and HSA-let-7a for animals. Ideally, all FASTQ files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this may cause issues with read counting. It is recommended to avoid the use of merged libraries when possible to ensure highest confidence in miRNA validation. See FAQ for more details.
+* `-fastq fastqfiles`:  Small RNA-seq libraries in FASTQ or FASTA format (can be compressed). If libraries are untrimmed, you must use option '-autotrim' to trim libraries. You may supply a key for trimming using option '-trimkey'. Default trimkey is ATH-miR166a for plants and HSA-let-7a for animals. Ideally, all FASTQ files should be **unique individual libraries**. If merged libraries are provided, be sure not to include any individual libraries present in the merged file, as this may cause issues with read counting. It is recommended to avoid the use of merged libraries when possible to ensure highest confidence in miRNA validation. See FAQ for more details.
 
 **Please note: the sequence identifier of each miRNA (i.e. ATH-miR173) must match the sequence identifier of the corresponding hairpin precursors in the hairpin file (i.e. ATH-MIR173)! This is not case sensitive.**
 
@@ -181,6 +181,7 @@ Alternatively, you could just remove those entries from the hairpin file.
 ### 5. Run miRScore using adjusted hairpins
 ```
 miRScore -mature ath_mature.fa -hairpin miRScore_adjusted_hairpins.fa -fastq fastq/* -autotrim -kingdom plant -out ath_results
+
 ```
 
 ## MirGeneDB
@@ -194,7 +195,6 @@ wget -O hsa-pri.fa "https://mirgenedb.org/fasta/hsa?pri=1"
 
 #mature sequences
 wget -O hsa-mat.fa "https://mirgenedb.org/fasta/hsa?mat=1"
-
 ```
 ### 2. Adjust precursors to not have '_pri' and miRNAs need to have '-3p' not "_3p" in order for miRScore to recognize.
 ```
@@ -214,6 +214,7 @@ fasterq-dump SRR518956
 ### 4. Run miRScore
 ```
 miRScore -mature hsa-mat.fa -hairpin hsa-pri.fa -kingdom animal -fastq fastq/* -autotrim -out hsa_results
+
 ```
 
 # Output
