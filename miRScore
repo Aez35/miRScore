@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-version = '0.3.4'
+version = '0.3.5'
 
 import RNA, re, pysam, gzip
 from pysam import FastaFile
@@ -547,23 +547,13 @@ def align_fastqs(args, files):
 
         print(f"Mapping {file} with mismatch option {mismatch_option} and format {'FASTA' if fasta_flag else 'FASTQ'}...")
 
-        # Set up base command
-        cmd = [
-            'bowtie',
-            '-p', str(args.threads),
-            '-a', mismatch_option,
-            '--no-unal', '-S','--norc',
-            '-x', 'hairpin'
-        ]
-
         if is_gz:
-            with gzip.open(file, 'rt') as f:
-                subprocess.call(
-                    cmd + [fasta_flag, '-', "-S", f"alignments/{file_core}.bam"],
-                    stdin=f,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.STDOUT
-                )
+            cmd = (
+                f"zcat {file} | "
+                f"bowtie -p {args.threads} -a {mismatch_option} --no-unal --norc -S -x hairpin -q - | "
+                f"samtools view -Sb - > alignments/{file_core}.bam"
+            )
+            run(cmd)
         else:
             if ext in [".fa", ".fasta"]:
                 cmd=f"bowtie -p {str(args.threads)} -a {mismatch_option} -f --no-unal -S --norc -x hairpin {file} | samtools view -Sb - > alignments/{file_core}.bam"
@@ -633,6 +623,7 @@ def process_fastqs(fastqs, keydna, args):
             sys.exit(f"Error trimming {fastq}: {e}")
 
 
+
 def get_counts(bam, x, start_indx=None, stop_indx=None):
     if start_indx is None or stop_indx is None:
         command = f"samtools view -r {Path(bam).stem} -F 16 alignments/merged.bam {x} | wc -l"
@@ -683,40 +674,38 @@ def score_alternative_mirnas(alt_mrnas, hp_dict):
     pred_dict = {}
 
     for x in tqdm.tqdm(alt_mrnas, desc="Scoring alternative miRNAs", disable=None):
-        hp = str(hp_dict[x].seq)
-        mature = str(alt_mrnas[x])
+            hp = str(hp_dict[x].seq)
+            mature = str(alt_mrnas[x])
 
-        if mature in hp:
-            mstart = hp.index(mature)
-            mstop = (hp.index(mature) + len(mature))
-            # RNAfold each hairpin
+            mstart0 = hp.index(mature)                  # 0-based
+            mstart  = mstart0 + 1                       # 1-based
+            mstop   = mstart0 + len(mature)             # 1-based stop (matches your main pipeline style)
+
             (ss, mfe) = RNA.fold(hp)
-            # Dotbracket structure
 
-            if mstart == 0:
-                mirspos = get_s_rels(mstart + 1, mstop + 1, ss)
-            else:
-                mirspos = get_s_rels(mstart, mstop, ss)
-            mstart = mstart + 1
+            # get_s_rels expects 1-based q positions (pairs keys are 1..len)
+            mirspos = get_s_rels(mstart, mstop, ss)
             if mirspos[0] is not None:
-                # Python indexing of mir position
-                mirsspos = [(mirspos[0] - 1), (mirspos[1])-1]
-                # if start is greater than stop, mirstar fails.
-                if mirsspos[0] < mirsspos[1] and (mirsspos[1] - mirsspos[0]) < (25):
-                    mirstar = hp[mirsspos[0]:mirsspos[1]]
-                    mirpos = [mstart-1, mstop]
-                    if args.kingdom == "animal":
-                        result = score_animal(mature, mirstar, hp,ss, mirpos, mirsspos)
+                mirsspos = [mirspos[0], mirspos[1]]     # keep 1-based
+
+                # build star sequence using 1-based -> python slice
+                if mirsspos[0] < mirsspos[1] and (mirsspos[1] - mirsspos[0]) < 25:
+                    mirstar = hp[(mirsspos[0]-1):mirsspos[1]]   # <-- note -1
+
+                    mirpos = [mstart, mstop]            # 1-based
                     if args.kingdom == "plant":
-                        result = score_plant(mature, mirstar, hp,ss, mirpos, mirsspos)
-                    # Add result from score function to mirna dict
-                    sep = ";"
-                    if len(result[1]) == 0:
-                        flag = ["NA"]
+                        result = score_plant(mature, mirstar, hp, ss, mirpos, mirsspos)
                     else:
+                        result = score_animal(mature, mirstar, hp, ss, mirpos, mirsspos)
+
+                    # Add result from score function to mirna dict
+                sep = ";"
+                if len(result[1]) == 0:
+                        flag = ["NA"]
+                else:
                         flag = list(result[1])
                     # If mirna contains both ) and (, it fails for pairing to itself. Else, if the result of scoring is greater than 80, add mirna to dictionary as a pass, and if not fail it.
-                    if sum(result[0]) > 81:
+                if sum(result[0]) > 81:
                         add_values_in_dict(pred_dict, x, [mature.translate(str.maketrans("tT", "uU")),
                                                           len(alt_mrnas[x]), mstart, mstop,
                                                           str(mirstar.translate(str.maketrans("tT", "uU"))),
@@ -1421,37 +1410,40 @@ def main():
         print("miRNAs predicted from failed miRNA loci:")
         print(len(alt_mirnas))
 
-        pred_counts={}
+        pred_counts = {}
         for bam in rgs:
             print("Counting reads in " + bam + "...")
-            for x in tqdm.tqdm(pred_dict,disable=None):
-                if "Hairpin structure invalid" not in pred_dict[x][11]:
-                    if pred_dict[x][2] !=0 and pred_dict[x][6]!=0:
-                        mstart_indx=pred_dict[x][2]-1
-                        mstop_indx=pred_dict[x][3]+1
-                        mirstart_indx=pred_dict[x][6]-1
-                        mirstop_indx=pred_dict[x][7]+1
-                    else:
-                        mstart_indx=pred_dict[x][2]
-                        mstop_indx=pred_dict[x][3]+1
-                        mirstart_indx=pred_dict[x][6]
-                        mirstop_indx=pred_dict[x][7]+1
+            for x in tqdm.tqdm(pred_dict, disable=None):
+                if "Hairpin structure invalid" in pred_dict[x][11]:
+                    continue
 
-                        add_values_in_dict(pred_counts,x,[str(Path(bam).stem)])
+                # choose bounds
+                if pred_dict[x][2] != 0 and pred_dict[x][6] != 0:
+                    mstart_indx  = pred_dict[x][2] - 1
+                    mstop_indx   = pred_dict[x][3] + 1
+                    mirstart_indx = pred_dict[x][6] - 1
+                    mirstop_indx  = pred_dict[x][7] + 1
+                else:
+                    mstart_indx  = pred_dict[x][2]
+                    mstop_indx   = pred_dict[x][3] + 1
+                    mirstart_indx = pred_dict[x][6]
+                    mirstop_indx  = pred_dict[x][7] + 1
 
-                        mir_count = get_counts(bam, x, mstart_indx, mstop_indx)
-                        mirs_count = get_counts(bam, x, mirstart_indx, mirstop_indx)
-                        tot_count = get_counts(bam, x)
-                        tot_locus=(int(mir_count)+int(mirs_count))
-                    
-                        add_values_in_dict(pred_counts, x, [mir_count, mirs_count,tot_locus,tot_count])
-                
-                        if int(tot_count) != 0:
-                            precision="{:.2f}".format((100*((int(mir_count)+int(mirs_count))/int(tot_count))))
-                            add_values_in_dict(pred_counts,x,[precision])
-                        else:
-                            precision= 0.00
-                            add_values_in_dict(pred_counts,x,[precision])
+                # ALWAYS count + store (this is the critical part)
+                add_values_in_dict(pred_counts, x, [str(Path(bam).stem)])
+
+                mir_count  = get_counts(bam, x, mstart_indx,  mstop_indx)
+                mirs_count = get_counts(bam, x, mirstart_indx, mirstop_indx)
+                tot_count  = get_counts(bam, x)
+                tot_locus  = int(mir_count) + int(mirs_count)
+
+                add_values_in_dict(pred_counts, x, [mir_count, mirs_count, tot_locus, tot_count])
+
+                if int(tot_count) != 0:
+                    precision = "{:.2f}".format(100 * (tot_locus / int(tot_count)))
+                else:
+                    precision = 0.00
+                add_values_in_dict(pred_counts, x, [precision])
 
         # Create DataFrame from dictionary
         df = pd.DataFrame.from_dict(pred_counts, orient='index')
@@ -1465,7 +1457,8 @@ def main():
 
         # Convert 'precision' to float and add 'result' column
         df2['precision'] = df2['precision'].astype(float)
-        df2['result'] = df2.apply(lambda row: 'Pass' if row['precision'] >= 75 and row['locusReads'] >= 10 else 'Fail', axis=1)
+        df2['result'] = df2.apply(lambda row: 'Pass' if row['mReads'] > 0 and row['precision'] >= 75 and row['msReads'] > 0 and (row['mReads'] + row['msReads'] >= 10) else 'Fail', axis=1)
+        df2['flags'] = df2.apply(generate_flags, axis=1)
 
         # Save DataFrame to CSV
         filename = args.n + '_alt_reads.csv' if args.n is not None else 'alt_reads.csv'
@@ -1495,7 +1488,7 @@ def main():
                 ms=0
                 all=0
                 precSum=0
-            #Count count libraries that have reads present
+            #Count libraries that have reads present
                 for i in range(0,len(mir_reads)):
                     sumreads=int(mir_reads[i])+int(mirstar_reads[i])
                     if int(mir_reads[i]) > 0 and int(mirstar_reads[i]) > 0 and precCount[i]>=75 and sumreads >9:
