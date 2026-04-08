@@ -1,5 +1,7 @@
-<img width="350" alt="Screenshot 2024-12-04 at 1 45 24 PM" src="https://github.com/user-attachments/assets/afa29e9f-83bb-4caf-bef8-fc1f39924c60">
 
+<img width="469" height="141" alt="Screenshot 2026-04-08 at 5 31 47 PM" src="https://github.com/user-attachments/assets/505b7e94-6226-4d20-acce-e237a681ef7e" />
+
+  [![DOI](https://img.shields.io/badge/DOI-10.1371/journal.pcbi.1013663-blue?style=for-the-badge)](https://doi.org/10.1371/journal.pcbi.1013663)
 ## Table of Contents
 
 - [Overview](#overview)
