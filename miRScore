@@ -549,7 +549,7 @@ def align_fastqs(args, files):
 
         if is_gz:
             cmd = (
-                f"zcat {file} | "
+                f"gunzip -c {file} | "
                 f"bowtie -p {args.threads} -a {mismatch_option} --no-unal --norc -S -x hairpin -q - | "
                 f"samtools view -Sb - > alignments/{file_core}.bam"
             )
