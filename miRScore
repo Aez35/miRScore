@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-version = '0.3.7'
+version = '0.3.8'
 
 import RNA, re, pysam, gzip
 from pysam import FastaFile
@@ -548,9 +548,10 @@ def align_fastqs(args, files):
         print(f"Mapping {file} with mismatch option {mismatch_option} and format {'FASTA' if fasta_flag else 'FASTQ'}...")
 
         if is_gz:
+            format_flag = "-f" if fasta_flag else "-q"
             cmd = (
                 f"gunzip -c {file} | "
-                f"bowtie -p {args.threads} -a {mismatch_option} --no-unal --norc -S -x hairpin -q - | "
+                f"bowtie -p {args.threads} -a {mismatch_option} --no-unal --norc -S -x hairpin {format_flag} - | "
                 f"samtools view -Sb - > alignments/{file_core}.bam"
             )
             run(cmd)
